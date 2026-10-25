@@ -31,6 +31,8 @@ public sealed class Loc : INotifyPropertyChanged
     public void SetLanguage(string code)
     {
         _localizer.SetLanguage(code);
+        // Avalonia watches indexer bindings ([key]) under "Item"; WPF-style listeners use "Item[]". Raise both.
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Language)));
         LanguageChanged?.Invoke(this, EventArgs.Empty);

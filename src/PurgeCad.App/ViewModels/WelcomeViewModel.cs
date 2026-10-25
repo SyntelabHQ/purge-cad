@@ -6,8 +6,17 @@ using PurgeCad.Core.Settings;
 namespace PurgeCad.App.ViewModels;
 
 /// <summary>Every start: language + theme (both applied live) and the no-warranty notice, then the main window.</summary>
-public sealed partial class WelcomeViewModel(Action<AvailableUpdate?> done) : ObservableObject
+public sealed partial class WelcomeViewModel : ObservableObject
 {
+    readonly Action<AvailableUpdate?> _done;
+
+    public WelcomeViewModel(Action<AvailableUpdate?> done)
+    {
+        _done = done;
+        // The status line is composed in code, so it follows a language change made on this screen.
+        Loc.Instance.LanguageChanged += (_, _) => { if (!IsUpdating) ShowUpdateStatus(); };
+    }
+
     public LanguagePickerViewModel Languages { get; } = new();
 
     // ---------- Version check (every start) ----------
@@ -30,22 +39,29 @@ public sealed partial class WelcomeViewModel(Action<AvailableUpdate?> done) : Ob
     /// <summary>Opens a web page (the window owns the launcher).</summary>
     public event EventHandler<string>? UrlRequested;
 
+    bool _checking;
+
     public async Task CheckForUpdatesAsync()
     {
-        if (!AppHost.Current.Settings.CheckForUpdates)
+        if (AppHost.Current.Settings.CheckForUpdates)
         {
-            UpdateStatus = Loc.Instance.Format("update.current", ("version", CurrentVersion));
-            return;
+            _checking = true;
+            ShowUpdateStatus();
+            var (ok, update) = await UpdateService.TryCheckAsync();
+            _checking = false;
+            _checked = ok;
+            Update = update;
+            OnPropertyChanged(nameof(IsUpToDate));
         }
-        UpdateStatus = Loc.Instance["update.checking"];
-        var (ok, update) = await UpdateService.TryCheckAsync();
-        _checked = ok;
-        Update = update;
-        OnPropertyChanged(nameof(IsUpToDate));
-        UpdateStatus = update is not null ? Loc.Instance.Format("update.available", ("version", update.Version.ToString()))
-            : ok ? Loc.Instance.Format("update.upToDate", ("version", CurrentVersion))
-            : Loc.Instance.Format("update.unknown", ("version", CurrentVersion));
+        ShowUpdateStatus();
     }
+
+    void ShowUpdateStatus() => UpdateStatus =
+        !AppHost.Current.Settings.CheckForUpdates ? Loc.Instance.Format("update.current", ("version", CurrentVersion))
+        : _checking ? Loc.Instance["update.checking"]
+        : Update is not null ? Loc.Instance.Format("update.available", ("version", Update.Version.ToString()))
+        : _checked ? Loc.Instance.Format("update.upToDate", ("version", CurrentVersion))
+        : Loc.Instance.Format("update.unknown", ("version", CurrentVersion));
 
     [RelayCommand]
     async Task InstallUpdate()
@@ -90,6 +106,6 @@ public sealed partial class WelcomeViewModel(Action<AvailableUpdate?> done) : Ob
         AppHost.Current.Settings.AcceptedNoticeVersion = AppSettings.CurrentNoticeVersion;
         AppHost.Current.Settings.FirstRunCompleted = true;
         AppHost.Current.SaveSettings();
-        done(Update);
+        _done(Update);
     }
 }
