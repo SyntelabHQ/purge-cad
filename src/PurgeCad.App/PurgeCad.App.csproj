@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Avalonia desktop app: Windows, macOS, Linux. All styling comes from Themes/*.axaml tokens. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>PurgeCAD</AssemblyName>
+    <RootNamespace>PurgeCad.App</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\purge-cad.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Velopack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PurgeCad.Core\PurgeCad.Core.csproj" />
+    <ProjectReference Include="..\PurgeCad.Localization\PurgeCad.Localization.csproj" />
+    <ProjectReference Include="..\PurgeCad.Engines.ACadSharp\PurgeCad.Engines.ACadSharp.csproj" />
+    <ProjectReference Include="..\PurgeCad.Engines.AutoCad\PurgeCad.Engines.AutoCad.csproj" />
+  </ItemGroup>
+  <!--
+    The AutoCAD plugin (PurgeCad.AutoCad.Plugin) is built for both AutoCAD runtimes and copied to
+    acad-plugin\<framework>\ next to PurgeCAD.exe, where the AutoCAD engine looks for it. It is not referenced:
+    the app never loads it, only accoreconsole does (NETLOAD).
+  -->
+  <PropertyGroup>
+    <AcadPluginProject>$(MSBuildThisFileDirectory)..\PurgeCad.AutoCad.Plugin\PurgeCad.AutoCad.Plugin.csproj</AcadPluginProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <AcadPluginFramework Include="net462" />
+    <AcadPluginFramework Include="net8.0-windows" />
+  </ItemGroup>
+
+  <Target Name="BuildAcadPlugin" AfterTargets="Build" Condition="'$(SkipAcadPlugin)' != 'true'">
+    <!-- The app's runtime (win-x64, self-contained, ...) does not apply to the plugin: it always builds plain. -->
+    <MSBuild Projects="$(AcadPluginProject)" Targets="Restore" RemoveProperties="RuntimeIdentifier;SelfContained;PublishDir"
+             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="$(AcadPluginProject)" Targets="Build" RemoveProperties="RuntimeIdentifier;SelfContained;PublishDir"
+             Properties="Configuration=$(Configuration);TargetFramework=%(AcadPluginFramework.Identity)" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\PurgeCad.AutoCad.Plugin\bin\$(Configuration)\%(AcadPluginFramework.Identity)\PurgeCad.AutoCad.Plugin.dll"
+          DestinationFolder="$(OutDir)acad-plugin\%(AcadPluginFramework.Identity)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- AutoCAD runs only on Windows: macOS / Linux packages do not carry the plugin. -->
+  <Target Name="PublishAcadPlugin" AfterTargets="Publish" DependsOnTargets="BuildAcadPlugin"
+          Condition="'$(SkipAcadPlugin)' != 'true' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win')))">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\PurgeCad.AutoCad.Plugin\bin\$(Configuration)\%(AcadPluginFramework.Identity)\PurgeCad.AutoCad.Plugin.dll"
+          DestinationFolder="$(PublishDir)acad-plugin\%(AcadPluginFramework.Identity)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

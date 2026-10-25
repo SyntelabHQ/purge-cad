@@ -1,0 +1,610 @@
+<!--
+  Main window. DataContext: MainViewModel. Every colour / size comes from Themes/Tokens.axaml,
+  every component look from Themes/Controls.axaml.
+
+  Layout:  custom title bar (app mark · name · language · Light/Dark · about · system buttons)
+           sidebar (mode · folder · options)  ║ splitter ║  main (run panel · results)
+  The window draws into the title bar area on Windows and macOS; on Linux the system title bar stays
+  and this bar is a normal header (see MainWindow.axaml.cs).
+-->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:PurgeCad.App.Services"
+        xmlns:b="using:PurgeCad.Core.Branding"
+        xmlns:c="using:PurgeCad.App.Controls"
+        x:Class="PurgeCad.App.Views.MainWindow"
+        Icon="/Assets/purge-cad.ico"
+        Title="{x:Static b:Brand.AppName}" Width="{StaticResource WindowWidth}" Height="{StaticResource WindowHeight}"
+        MinWidth="{StaticResource WindowMinWidth}" MinHeight="{StaticResource WindowMinHeight}"
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="{StaticResource TitleBarHeight}"
+        DragDrop.AllowDrop="True"
+        FlowDirection="{Binding Language.RightToLeft, Source={x:Static s:Loc.Instance}, Converter={x:Static s:Converters.FlowDirection}}">
+
+  <DockPanel Margin="{Binding $parent[Window].OffScreenMargin}">
+    <!-- ================= Title bar ================= -->
+    <Border DockPanel.Dock="Top" Classes="titleBar" x:Name="TitleBar">
+      <Grid x:Name="TitleBarGrid" ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{StaticResource Space2}" VerticalAlignment="Center"
+                    Margin="{StaticResource TitleBarStart}" IsHitTestVisible="False">
+          <Border Classes="appMark">
+            <PathIcon Data="{StaticResource IconPurgeCad}" />
+          </Border>
+          <TextBlock Classes="brand" Text="{Binding AppName}" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{StaticResource Space1}" VerticalAlignment="Center"
+                    Margin="{StaticResource TitleBarEnd}">
+          <!-- A newer version: download page, or skip it -->
+          <Button Classes="update" IsVisible="{Binding HasUpdate}" Margin="{StaticResource GapEndSm}" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+              <PathIcon Data="{StaticResource IconDownload}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
+              <TextBlock Text="{Binding UpdateText}" VerticalAlignment="Center" />
+            </StackPanel>
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <StackPanel Spacing="{StaticResource Space2}" MaxWidth="{StaticResource FlyoutTextMaxWidth}">
+                  <TextBlock Text="{Binding UpdateText}" FontWeight="SemiBold" />
+                  <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding CanInstallUpdate}"
+                             Text="{Binding [update.body.install], Source={x:Static s:Loc.Instance}}" />
+                  <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding !CanInstallUpdate}"
+                             Text="{Binding [update.body.download], Source={x:Static s:Loc.Instance}}" />
+                  <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding IsRunning}"
+                             Text="{Binding [update.afterRun], Source={x:Static s:Loc.Instance}}" />
+                  <TextBlock Classes="caption" Text="{Binding UpdateProgress}" FontWeight="Medium"
+                             IsVisible="{Binding UpdateProgress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+                    <Button Classes="primary" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanInstallUpdate}"
+                            Content="{Binding [update.install], Source={x:Static s:Loc.Instance}}" />
+                    <Button Classes="primary" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding !CanInstallUpdate}"
+                            Content="{Binding [update.download], Source={x:Static s:Loc.Instance}}" />
+                    <Button Command="{Binding SkipUpdateCommand}" IsEnabled="{Binding !IsUpdating}"
+                            Content="{Binding [update.skip], Source={x:Static s:Loc.Instance}}" />
+                  </StackPanel>
+                  <Button Classes="ghost" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding CanInstallUpdate}"
+                          Padding="0" Content="{Binding [update.whatsNew], Source={x:Static s:Loc.Instance}}" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+          <c:LanguagePicker Classes="compact" DataContext="{Binding Languages}" VerticalAlignment="Center" />
+          <c:ThemeSwitch Classes="compact" VerticalAlignment="Center" Margin="{StaticResource GapInlineXs}" />
+          <Button Classes="icon" Command="{Binding ShowAboutCommand}"
+                  ToolTip.Tip="{Binding [about.title], Source={x:Static s:Loc.Instance}}">
+            <PathIcon Data="{StaticResource IconInfo}" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="{StaticResource SidebarWidth}"
+                          MinWidth="{StaticResource SidebarMinWidth}" MaxWidth="{StaticResource SidebarMaxWidth}" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" MinWidth="{StaticResource MainMinWidth}" />
+      </Grid.ColumnDefinitions>
+
+      <!-- ================= Sidebar ================= -->
+      <Border Classes="sidebar">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="{StaticResource PaddingSidebar}" Spacing="{StaticResource SidebarGap}">
+
+            <!-- Mode -->
+            <Border Classes="segmented">
+              <UniformGrid Columns="2">
+                <RadioButton Classes="segment" IsChecked="{Binding IsPurgeMode}" Padding="{StaticResource PaddingSegmentWide}">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                    <PathIcon Data="{StaticResource IconPurgeCad}" />
+                    <TextBlock Text="{Binding [mode.purge], Source={x:Static s:Loc.Instance}}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </RadioButton>
+                <RadioButton Classes="segment" IsChecked="{Binding IsCleanMode}" Padding="{StaticResource PaddingSegmentWide}">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                    <PathIcon Data="{StaticResource IconFile}" />
+                    <TextBlock Text="{Binding [mode.cleanup], Source={x:Static s:Loc.Instance}}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </RadioButton>
+              </UniformGrid>
+            </Border>
+
+            <!-- Folder -->
+            <StackPanel Spacing="{StaticResource Space2}">
+              <TextBlock Classes="section" Text="{Binding [source.folder], Source={x:Static s:Loc.Instance}}" />
+              <Border Classes="tile">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Border Classes="iconTile" Margin="{StaticResource GapEndMd}" VerticalAlignment="Center">
+                    <PathIcon Data="{StaticResource IconFolder}" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding FolderName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               IsVisible="{Binding HasFolder}" />
+                    <TextBlock Classes="caption" Text="{Binding Folder}" TextTrimming="PathSegmentEllipsis"
+                               IsVisible="{Binding HasFolder}" ToolTip.Tip="{Binding Folder}" />
+                    <TextBlock Text="{Binding [source.empty], Source={x:Static s:Loc.Instance}}" FontWeight="SemiBold"
+                               IsVisible="{Binding !HasFolder}" />
+                    <TextBlock Classes="caption" Text="{Binding [source.dropHint], Source={x:Static s:Loc.Instance}}"
+                               IsVisible="{Binding !HasFolder}" />
+                  </StackPanel>
+                  <Button Grid.Column="2" x:Name="ChooseFolder" Margin="{StaticResource GapStartMd}" VerticalAlignment="Center"
+                          Content="{Binding [common.browse], Source={x:Static s:Loc.Instance}}" />
+                </Grid>
+              </Border>
+              <WrapPanel>
+                <ToggleButton Classes="chip" IsChecked="{Binding IncludeSubfolders}"
+                              Content="{Binding [source.subfolders], Source={x:Static s:Loc.Instance}}" />
+                <ToggleButton Classes="chip" IsChecked="{Binding IncludeDwg}" Content="{Binding [source.dwg], Source={x:Static s:Loc.Instance}}" />
+                <ToggleButton Classes="chip" IsChecked="{Binding IncludeDxf}" Content="{Binding [source.dxf], Source={x:Static s:Loc.Instance}}" />
+              </WrapPanel>
+              <!-- Name filter: only drawings whose name contains one of the terms -->
+              <TextBox Text="{Binding NameFilterText}"
+                       Watermark="{Binding [source.filter.hint], Source={x:Static s:Loc.Instance}}"
+                       ToolTip.Tip="{Binding [source.filter.tip], Source={x:Static s:Loc.Instance}}">
+                <TextBox.InnerLeftContent>
+                  <PathIcon Data="{StaticResource IconSearch}" Margin="{StaticResource GapStart}" />
+                </TextBox.InnerLeftContent>
+                <TextBox.InnerRightContent>
+                  <Button Classes="icon" Command="{Binding ClearNameFilterCommand}" IsVisible="{Binding HasNameFilter}"
+                          Padding="{StaticResource PaddingIcon}" Margin="{StaticResource GapEndXs}"
+                          ToolTip.Tip="{Binding [source.filter.clear], Source={x:Static s:Loc.Instance}}">
+                    <PathIcon Data="{StaticResource IconClose}" Width="{StaticResource IconSizeTiny}" Height="{StaticResource IconSizeTiny}" />
+                  </Button>
+                </TextBox.InnerRightContent>
+              </TextBox>
+              <!-- Size filter in MB: a maximum, a minimum, or both -->
+              <Grid ColumnDefinitions="Auto,*,Auto,*">
+                <TextBlock Classes="caption" VerticalAlignment="Center" Margin="{StaticResource FieldLabelMargin}"
+                           Text="{Binding [source.size], Source={x:Static s:Loc.Instance}}" />
+                <TextBox Grid.Column="1" Text="{Binding MinSizeText}"
+                         Watermark="{Binding [source.size.min], Source={x:Static s:Loc.Instance}}" />
+                <TextBlock Grid.Column="2" Text="–" VerticalAlignment="Center" Margin="{StaticResource GapInlineSm}" />
+                <TextBox Grid.Column="3" Text="{Binding MaxSizeText}"
+                         Watermark="{Binding [source.size.max], Source={x:Static s:Loc.Instance}}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="{StaticResource SpaceInline}">
+                <Border Classes="stat">
+                  <StackPanel>
+                    <TextBlock Classes="stat" Text="{Binding CountDwg}" />
+                    <TextBlock Classes="caption" Text="{Binding [source.dwg], Source={x:Static s:Loc.Instance}}" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="stat">
+                  <StackPanel>
+                    <TextBlock Classes="stat" Text="{Binding CountDxf}" />
+                    <TextBlock Classes="caption" Text="{Binding [source.dxf], Source={x:Static s:Loc.Instance}}" />
+                  </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="stat">
+                  <StackPanel>
+                    <TextBlock Classes="stat" Text="{Binding CountAux}" />
+                    <TextBlock Classes="caption" Text="{Binding [scan.aux], Source={x:Static s:Loc.Instance}}" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}" IsVisible="{Binding IsScanning}">
+                <ProgressBar IsIndeterminate="True" Width="{StaticResource ScanProgressWidth}" VerticalAlignment="Center" />
+                <TextBlock Classes="caption" Text="{Binding [scan.scanning], Source={x:Static s:Loc.Instance}}" />
+              </StackPanel>
+            </StackPanel>
+
+            <!-- ===== Purge options ===== -->
+            <StackPanel Spacing="{StaticResource SidebarGap}" IsVisible="{Binding IsPurgeMode}">
+
+              <!-- Engine -->
+              <StackPanel Spacing="{StaticResource Space2}">
+                <TextBlock Classes="section" Text="{Binding [options.engine], Source={x:Static s:Loc.Instance}}" />
+                <ItemsControl ItemsSource="{Binding Engines}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="{StaticResource SpaceInline}" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <RadioButton Classes="tile" GroupName="engine" IsEnabled="{Binding IsAvailable}"
+                                   Command="{Binding $parent[Window].DataContext.SelectEngineCommand}"
+                                   CommandParameter="{Binding}"
+                                   IsChecked="{Binding IsSelected, Mode=OneWay}">
+                        <StackPanel Spacing="{StaticResource SpaceXs}">
+                          <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Border Classes="badge" Classes.VeryLow="{Binding IsVeryLow}" Classes.Medium="{Binding IsMedium}"
+                                    IsVisible="{Binding HasRisk}">
+                              <TextBlock Text="{Binding RiskText}" />
+                            </Border>
+                          </StackPanel>
+                          <ItemsControl ItemsSource="{Binding Risks}" IsVisible="{Binding IsSelected}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate>
+                                <TextBlock Classes="caption" Text="{Binding}" TextWrapping="Wrap" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <TextBlock Classes="caption warning" Text="{Binding UnavailableReason}"
+                                     IsVisible="{Binding !IsAvailable}" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </RadioButton>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Risky ACadSharp option -->
+                <Border Classes="notice" IsVisible="{Binding ShowAllowUnknown}">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <PathIcon Data="{StaticResource IconWarning}" VerticalAlignment="Top" Margin="{StaticResource IconLeadTall}" />
+                    <StackPanel Grid.Column="1" Spacing="{StaticResource SpaceXs}" Margin="{StaticResource GapEnd}">
+                      <TextBlock Text="{Binding [options.allowUnknown], Source={x:Static s:Loc.Instance}}"
+                                 FontWeight="SemiBold" TextWrapping="Wrap" FontSize="{DynamicResource FontSizeSmall}" />
+                      <TextBlock Classes="caption" TextWrapping="Wrap"
+                                 Text="{Binding [options.allowUnknown.risk], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="2" IsChecked="{Binding AllowUnknownObjects}" VerticalAlignment="Top" />
+                  </Grid>
+                </Border>
+              </StackPanel>
+
+              <!-- What to purge: one row, details in a flyout -->
+              <StackPanel Spacing="{StaticResource Space2}">
+                <TextBlock Classes="section" Text="{Binding [options.what], Source={x:Static s:Loc.Instance}}" />
+                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <PathIcon Data="{StaticResource IconCheck}" Margin="{StaticResource GapEnd}" />
+                    <TextBlock Grid.Column="1" Text="{Binding CategorySummary}" VerticalAlignment="Center" />
+                    <PathIcon Grid.Column="2" Data="{StaticResource IconChevronDown}" Width="{StaticResource IconSizeXSmall}" Height="{StaticResource IconSizeXSmall}" />
+                  </Grid>
+                  <Button.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedLeft">
+                      <StackPanel Width="{StaticResource FlyoutWidth}" Spacing="{StaticResource Space2}">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                          <TextBlock Classes="section" Text="{Binding [options.what], Source={x:Static s:Loc.Instance}}"
+                                     VerticalAlignment="Center" />
+                          <Button Grid.Column="1" Classes="ghost" Padding="{StaticResource PaddingGhostSmall}" Command="{Binding SelectCategoriesCommand}"
+                                  CommandParameter="all" Content="{Binding [options.what.all], Source={x:Static s:Loc.Instance}}" />
+                          <Button Grid.Column="2" Classes="ghost" Padding="{StaticResource PaddingGhostSmall}" Command="{Binding SelectCategoriesCommand}"
+                                  CommandParameter="none" Content="{Binding [options.what.none], Source={x:Static s:Loc.Instance}}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Categories}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <CheckBox IsChecked="{Binding IsChecked}" ToolTip.Tip="{Binding DangerHint}" MinHeight="{StaticResource CheckRowMinHeight}"
+                                        Padding="{StaticResource PaddingCheckLabel}">
+                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap" FontSize="{DynamicResource FontSizeSmall}"
+                                           Classes.warning="{Binding IsDangerous}" />
+                              </CheckBox>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
+              </StackPanel>
+
+              <!-- More options -->
+              <StackPanel Spacing="{StaticResource Space2}">
+                <TextBlock Classes="section" Text="{Binding [options.more], Source={x:Static s:Loc.Instance}}" />
+                <Border Classes="tile" Padding="0">
+                  <StackPanel>
+                    <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource PaddingTile}">
+                      <TextBlock Text="{Binding [cleanup.alsoDuringPurge], Source={x:Static s:Loc.Instance}}"
+                                 TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEnd}" />
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding CleanDuringPurge}" />
+                    </Grid>
+                    <Separator />
+                    <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource PaddingTile}">
+                      <TextBlock Text="{Binding [options.parallel], Source={x:Static s:Loc.Instance}}"
+                                 TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEnd}" />
+                      <Border Grid.Column="1" Classes="segmented">
+                        <ItemsControl ItemsSource="{Binding ParallelChoices}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <RadioButton Classes="segment" GroupName="parallel" IsChecked="{Binding IsSelected}"
+                                           Content="{Binding Label}" MinWidth="{StaticResource SegmentMinWidth}" Padding="{StaticResource PaddingSegmentSmall}" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </Border>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+
+            <!-- ===== Cleanup options ===== -->
+            <StackPanel Spacing="{StaticResource Space2}" IsVisible="{Binding IsCleanMode}">
+              <TextBlock Classes="section" Text="{Binding [tab.cleanup], Source={x:Static s:Loc.Instance}}" />
+              <Border Classes="tile" Padding="0">
+                <StackPanel>
+                  <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource PaddingTile}">
+                    <StackPanel Spacing="{StaticResource SpaceXs}" Margin="{StaticResource GapEnd}">
+                      <TextBlock Text="{Binding [cleanup.lock], Source={x:Static s:Loc.Instance}}" FontWeight="SemiBold" />
+                      <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding [cleanup.lock.hint], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" x:Name="CleanLock" IsChecked="{Binding Cleanup.LockFiles}" />
+                  </Grid>
+                  <Separator />
+                  <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource PaddingTile}">
+                    <StackPanel Spacing="{StaticResource SpaceXs}" Margin="{StaticResource GapEnd}">
+                      <TextBlock Text="{Binding [cleanup.bak], Source={x:Static s:Loc.Instance}}" FontWeight="SemiBold" />
+                      <TextBlock Classes="caption warning" TextWrapping="Wrap" Text="{Binding [cleanup.bak.hint], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" x:Name="CleanBak" IsChecked="{Binding Cleanup.Backups}" />
+                  </Grid>
+                  <Separator />
+                  <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource PaddingTile}">
+                    <TextBlock Text="{Binding [cleanup.autosave], Source={x:Static s:Loc.Instance}}" FontWeight="SemiBold"
+                               VerticalAlignment="Center" Margin="{StaticResource GapEnd}" />
+                    <ToggleSwitch Grid.Column="1" x:Name="CleanSv" IsChecked="{Binding Cleanup.Autosaves}" />
+                  </Grid>
+                  <Separator />
+                  <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource PaddingTile}">
+                    <TextBlock Text="{Binding [cleanup.permanent], Source={x:Static s:Loc.Instance}}"
+                               TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEnd}" />
+                    <ToggleSwitch Grid.Column="1" x:Name="CleanPermanent" IsChecked="{Binding Cleanup.Permanent}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <!-- Drag to resize the two panels -->
+      <GridSplitter Grid.Column="1" Classes="panel" />
+
+      <!-- ================= Main ================= -->
+      <DockPanel Grid.Column="2" Margin="{StaticResource PaddingMain}">
+
+        <!-- Run panel (purge) -->
+        <Border DockPanel.Dock="Top" Classes="card" Margin="{StaticResource GapBelowLg}" IsVisible="{Binding IsPurgeMode}">
+          <StackPanel Spacing="{StaticResource Space3}">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel VerticalAlignment="Center" Spacing="{StaticResource SpaceHair}">
+                <TextBlock Classes="title" Text="{Binding [tab.purge], Source={x:Static s:Loc.Instance}}" />
+                <TextBlock Classes="caption" Text="{Binding ScanText}" TextWrapping="Wrap" />
+              </StackPanel>
+              <Panel Grid.Column="1" Margin="{StaticResource GapStartLg}" VerticalAlignment="Center">
+                <Button Classes="primary large" Command="{Binding StartCommand}" IsVisible="{Binding !IsRunning}" MinWidth="{StaticResource RunButtonMinWidth}"
+                        HorizontalContentAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                    <PathIcon Data="{StaticResource IconPlay}" />
+                    <TextBlock Text="{Binding [run.start], Source={x:Static s:Loc.Instance}}" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="large" Command="{Binding StopCommand}" IsVisible="{Binding IsRunning}"
+                        IsEnabled="{Binding !IsStopping}" MinWidth="{StaticResource RunButtonMinWidth}" HorizontalContentAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                    <PathIcon Data="{StaticResource IconStop}" />
+                    <TextBlock Text="{Binding [run.stop], Source={x:Static s:Loc.Instance}}" />
+                  </StackPanel>
+                </Button>
+              </Panel>
+            </Grid>
+
+            <!-- Where to save -->
+            <StackPanel Spacing="{StaticResource SpaceInline}">
+              <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="section" Text="{Binding [options.output], Source={x:Static s:Loc.Instance}}"
+                           VerticalAlignment="Center" Margin="{StaticResource GapEndLg}" />
+                <Border Grid.Column="1" Classes="segmented">
+                  <UniformGrid Columns="4">
+                    <RadioButton Classes="segment" GroupName="mode" IsChecked="{Binding IsCopyMode}"
+                                 Content="{Binding [output.copy.short], Source={x:Static s:Loc.Instance}}" />
+                    <RadioButton Classes="segment" GroupName="mode" IsChecked="{Binding IsInPlaceMode}"
+                                 Content="{Binding [output.inPlace.short], Source={x:Static s:Loc.Instance}}" />
+                    <RadioButton Classes="segment" GroupName="mode" IsChecked="{Binding IsReplaceMode}"
+                                 Content="{Binding [output.replace.short], Source={x:Static s:Loc.Instance}}" />
+                    <RadioButton Classes="segment" GroupName="mode" IsChecked="{Binding IsReportOnlyMode}"
+                                 Content="{Binding [output.reportOnly.short], Source={x:Static s:Loc.Instance}}" />
+                  </UniformGrid>
+                </Border>
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="caption" Text="{Binding OutputHint}" TextWrapping="Wrap" VerticalAlignment="Center"
+                           Classes.warning="{Binding IsReplaceMode}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsCopyMode}">
+                <TextBox Text="{Binding OutputFolder}" IsReadOnly="True"
+                         Watermark="{Binding [output.chooseFolder], Source={x:Static s:Loc.Instance}}">
+                  <TextBox.InnerLeftContent>
+                    <PathIcon Data="{StaticResource IconFolder}" Margin="{StaticResource GapStartMd}" Foreground="{DynamicResource TextMuted}" />
+                  </TextBox.InnerLeftContent>
+                </TextBox>
+                <Button Grid.Column="1" x:Name="ChooseOutput" Margin="{StaticResource GapStartSm}"
+                        Content="{Binding [common.browse], Source={x:Static s:Loc.Instance}}" />
+              </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="{StaticResource SpaceInline}">
+              <ProgressBar Value="{Binding ProgressValue}" Maximum="{Binding ProgressMaximum}" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="caption" Text="{Binding ProgressText}" />
+                <TextBlock Grid.Column="1" Classes="caption" Text="{Binding [run.stopping], Source={x:Static s:Loc.Instance}}"
+                           IsVisible="{Binding IsStopping}" />
+              </Grid>
+            </StackPanel>
+
+            <!-- Summary -->
+            <StackPanel Spacing="{StaticResource Space2}" IsVisible="{Binding HasSummary}">
+              <!-- Sizes (3) and counts (4), with a wider gap between the two groups -->
+              <Grid ColumnDefinitions="3*,4*" ColumnSpacing="{StaticResource Space4}">
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="{StaticResource SpaceInline}">
+                  <Border Classes="stat">
+                    <StackPanel>
+                      <TextBlock Classes="stat" Text="{Binding SummaryBefore}" />
+                      <TextBlock Classes="caption" Text="{Binding [summary.before], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="1" Classes="stat">
+                    <StackPanel>
+                      <TextBlock Classes="stat" Text="{Binding SummaryAfter}" />
+                      <TextBlock Classes="caption" Text="{Binding [summary.after], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="2" Classes="stat Saved">
+                    <StackPanel>
+                      <TextBlock Classes="stat" Text="{Binding SummarySaved}" />
+                      <TextBlock Classes="caption" Text="{Binding [summary.savedLabel], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+                <Grid Grid.Column="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="{StaticResource SpaceInline}">
+                  <Border Classes="stat" Classes.Purged="{Binding AnyPurged}">
+                    <StackPanel>
+                      <TextBlock Classes="stat" Text="{Binding SummaryPurged}" />
+                      <TextBlock Classes="caption" Text="{Binding [summary.purged], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="1" Classes="stat">
+                    <StackPanel>
+                      <TextBlock Classes="stat" Text="{Binding SummaryUnchanged}" />
+                      <TextBlock Classes="caption" Text="{Binding [summary.unchanged], Source={x:Static s:Loc.Instance}}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="2" Classes="stat" Classes.Skipped="{Binding AnySkipped}">
+                    <StackPanel>
+                      <TextBlock Classes="stat" Text="{Binding SummarySkipped}" />
+                      <TextBlock Classes="caption" Text="{Binding [summary.skipped], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="3" Classes="stat" Classes.Failed="{Binding AnyFailed}">
+                    <StackPanel>
+                      <TextBlock Classes="stat" Text="{Binding SummaryFailed}" />
+                      <TextBlock Classes="caption" Text="{Binding [summary.failed], Source={x:Static s:Loc.Instance}}" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+              </Grid>
+              <Border Classes="notice info" IsVisible="{Binding SummaryIsEstimate}">
+                <Grid ColumnDefinitions="Auto,*">
+                  <PathIcon Data="{StaticResource IconInfo}" Margin="{StaticResource IconLead}" VerticalAlignment="Top" />
+                  <TextBlock Grid.Column="1" Classes="caption" TextWrapping="Wrap"
+                             Text="{Binding [summary.estimateNote], Source={x:Static s:Loc.Instance}}" />
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}" VerticalAlignment="Center">
+                <PathIcon Data="{StaticResource IconInfo}" Width="{StaticResource IconSizeXSmall}" Height="{StaticResource IconSizeXSmall}" Foreground="{DynamicResource TextMuted}" />
+                <TextBlock Classes="caption" Text="{Binding [cloud.note], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="ghost" Command="{Binding SaveReportCommand}" IsVisible="{Binding HasSummary}"
+                      Padding="{StaticResource PaddingSegmentCompact}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                  <PathIcon Data="{StaticResource IconDownload}" />
+                  <TextBlock Text="{Binding [summary.saveReport], Source={x:Static s:Loc.Instance}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Run panel (cleanup) -->
+        <Border DockPanel.Dock="Top" Classes="card" Margin="{StaticResource GapBelowLg}" IsVisible="{Binding IsCleanMode}">
+          <StackPanel Spacing="{StaticResource Space3}">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel VerticalAlignment="Center" Spacing="{StaticResource SpaceHair}">
+                <TextBlock Classes="title" Text="{Binding [tab.cleanup], Source={x:Static s:Loc.Instance}}" />
+                <TextBlock Classes="caption" Text="{Binding [cleanup.description], Source={x:Static s:Loc.Instance}}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="primary large" Margin="{StaticResource GapStartLg}" MinWidth="{StaticResource RunButtonMinWidth}" VerticalAlignment="Center"
+                      HorizontalContentAlignment="Center" Command="{Binding CleanCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                  <PathIcon Data="{StaticResource IconBroom}" />
+                  <TextBlock Text="{Binding [cleanup.run], Source={x:Static s:Loc.Instance}}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+            <TextBlock Classes="subtitle" Text="{Binding CleanupText}" TextWrapping="Wrap"
+                       IsVisible="{Binding CleanupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Results -->
+        <Border Classes="card" Padding="0" IsVisible="{Binding IsPurgeMode}" ClipToBounds="True">
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="3*,1.3*,1.8*,0.8*,1*,0.7*" Margin="{StaticResource PaddingRow}">
+              <CheckBox Classes="compact" IsThreeState="True" IsChecked="{Binding AllSelected}" IsEnabled="{Binding !IsRunning}"
+                        IsVisible="{Binding HasRows}" ToolTip.Tip="{Binding [results.selectAll], Source={x:Static s:Loc.Instance}}">
+                <TextBlock Classes="section" Text="{Binding SelectionText}" />
+              </CheckBox>
+              <TextBlock Classes="section" Text="{Binding [results.col.file], Source={x:Static s:Loc.Instance}}"
+                         IsVisible="{Binding !HasRows}" />
+              <TextBlock Grid.Column="1" Classes="section" Text="{Binding [results.col.status], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Column="2" Classes="section" Text="{Binding [results.col.size], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Column="3" Classes="section" Text="{Binding [results.col.removed], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Column="4" Classes="section" Text="{Binding [results.col.engine], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Column="5" Classes="section" Text="{Binding [results.col.time], Source={x:Static s:Loc.Instance}}" />
+            </Grid>
+            <Panel>
+              <!-- Empty state -->
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource Space2}"
+                          MaxWidth="{StaticResource EmptyStateMaxWidth}" IsVisible="{Binding !HasRows}">
+                <Border Classes="iconTile" Width="{StaticResource IconTileSizeLarge}" Height="{StaticResource IconTileSizeLarge}" HorizontalAlignment="Center">
+                  <PathIcon Data="{StaticResource IconFile}" Width="{StaticResource IconSizeXLarge}" Height="{StaticResource IconSizeXLarge}" />
+                </Border>
+                <TextBlock Classes="subtitle" HorizontalAlignment="Center"
+                           Text="{Binding [results.title], Source={x:Static s:Loc.Instance}}" />
+                <TextBlock Classes="caption" TextAlignment="Center" TextWrapping="Wrap"
+                           Text="{Binding [results.empty], Source={x:Static s:Loc.Instance}}" />
+              </StackPanel>
+
+              <!-- Virtualized: only the rows on screen are created, so tens of thousands of files stay fast -->
+              <ItemsControl ItemsSource="{Binding Rows}" IsVisible="{Binding HasRows}">
+                  <ItemsControl.Template>
+                    <ControlTemplate>
+                      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                        <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                      </ScrollViewer>
+                    </ControlTemplate>
+                  </ItemsControl.Template>
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Classes="resultRow" Classes.excluded="{Binding !IsChecked}" ToolTip.Tip="{Binding ReasonDetail}">
+                        <Grid ColumnDefinitions="3*,1.3*,1.8*,0.8*,1*,0.7*">
+                          <!-- The whole name is the checkbox label, so a click on the name selects the file -->
+                          <CheckBox Margin="{StaticResource GapEnd}" VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                    IsChecked="{Binding IsChecked}"
+                                    IsEnabled="{Binding !$parent[ItemsControl].DataContext.IsRunning}">
+                            <StackPanel>
+                              <TextBlock Text="{Binding File}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Classes="caption warning" Text="{Binding Reason}" TextWrapping="Wrap"
+                                         IsVisible="{Binding HasReason}" />
+                            </StackPanel>
+                          </CheckBox>
+                          <Border Grid.Column="1" Classes="status" IsVisible="{Binding ShowStatus}" Classes.Purged="{Binding IsPurged}"
+                                  Classes.Skipped="{Binding IsSkipped}" Classes.Failed="{Binding IsFailed}"
+                                  Classes.Running="{Binding IsRunning}">
+                            <TextBlock Text="{Binding Status}" />
+                          </Border>
+                          <TextBlock Grid.Column="2" Text="{Binding Size}" Classes="secondary" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="3" Text="{Binding Removed}" VerticalAlignment="Center"
+                                     ToolTip.Tip="{Binding RemovedDetail}" />
+                          <TextBlock Grid.Column="4" Text="{Binding Engine}" Classes="secondary" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="5" Text="{Binding Time}" Classes="secondary" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Panel>
+          </DockPanel>
+        </Border>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</Window>

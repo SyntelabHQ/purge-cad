@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Plugin that PurgeCAD loads into AutoCAD's accoreconsole with NETLOAD (command PURGECADRUN).
+    Two builds of the same code:
+      net462          AutoCAD 2013 - 2024 (.NET Framework 4). Compiled against the AutoCAD 2015 API (the oldest on
+                      NuGet); AutoCAD's managed DLLs are not strong-named, so it binds to 2013 / 2014 as well, and it
+                      only uses API that already existed in 2013.
+      net8.0-windows  AutoCAD 2025 and newer (.NET 8).
+    AutoCAD's own DLLs are compile-time references only (ExcludeAssets=runtime): AutoCAD supplies them at run time
+    and they are never copied or shipped. The app copies both builds next to PurgeCAD.exe (see PurgeCad.App.csproj).
+  -->
+  <PropertyGroup>
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net462;net8.0-windows</TargetFrameworks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>PurgeCad.AutoCad.Plugin</RootNamespace>
+    <AssemblyName>PurgeCad.AutoCad.Plugin</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- AutoCAD packages warn about x64 vs AnyCPU references; the plugin is x64 like AutoCAD. -->
+    <NoWarn>$(NoWarn);MSB3270;NU1603</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+    <PackageReference Include="AutoCAD.NET.Core" VersionOverride="20.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Model" VersionOverride="20.0.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <PackageReference Include="AutoCAD.NET.Core" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Model" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,81 @@
+<!-- First run: language and theme (both apply live), and the no-warranty notice. DataContext: WelcomeViewModel. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:PurgeCad.App.Services"
+        xmlns:b="using:PurgeCad.Core.Branding"
+        xmlns:c="using:PurgeCad.App.Controls"
+        x:Class="PurgeCad.App.Views.WelcomeWindow"
+        Icon="/Assets/purge-cad.ico"
+        Title="{x:Static b:Brand.AppName}" Width="{StaticResource WelcomeWidth}" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        FlowDirection="{Binding Language.RightToLeft, Source={x:Static s:Loc.Instance}, Converter={x:Static s:Converters.FlowDirection}}">
+  <StackPanel>
+    <!-- Hero -->
+    <Border Padding="{StaticResource WelcomeHeroInset}">
+      <StackPanel HorizontalAlignment="Center" Spacing="{StaticResource Space3}">
+        <Border Classes="appMark" CornerRadius="{StaticResource RadiusAppMarkHero}"
+                Width="{StaticResource AppMarkSizeHero}" Height="{StaticResource AppMarkSizeHero}" HorizontalAlignment="Center">
+          <PathIcon Data="{StaticResource IconPurgeCad}" Width="{StaticResource IconSizeHero}" Height="{StaticResource IconSizeHero}" />
+        </Border>
+        <TextBlock Classes="brand" Text="{x:Static b:Brand.AppName}" FontSize="{StaticResource FontSizeHero}" HorizontalAlignment="Center" />
+        <TextBlock Classes="secondary" Text="{Binding [app.tagline], Source={x:Static s:Loc.Instance}}"
+                   HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+      </StackPanel>
+    </Border>
+
+    <!-- Choices -->
+    <StackPanel Margin="{StaticResource WelcomeBodyInset}" Spacing="{StaticResource Space4}">
+      <StackPanel Spacing="{StaticResource Space2}">
+        <TextBlock Classes="section" Text="{Binding [welcome.language], Source={x:Static s:Loc.Instance}}" />
+        <c:LanguagePicker DataContext="{Binding Languages}" />
+      </StackPanel>
+
+      <StackPanel Spacing="{StaticResource Space2}">
+        <TextBlock Classes="section" Text="{Binding [welcome.theme], Source={x:Static s:Loc.Instance}}" />
+        <c:ThemeSwitch />
+      </StackPanel>
+
+      <!-- Version: checked at every start -->
+      <Border Classes="tile">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <PathIcon Data="{StaticResource IconCheck}" Margin="{StaticResource GapEnd}" VerticalAlignment="Center" IsVisible="{Binding IsUpToDate}" />
+          <PathIcon Data="{StaticResource IconDownload}" Margin="{StaticResource GapEnd}" VerticalAlignment="Center" IsVisible="{Binding HasUpdate}" />
+          <TextBlock Grid.Column="1" Text="{Binding UpdateStatus}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="primary" Margin="{StaticResource GapStart}" IsVisible="{Binding CanInstallUpdate}"
+                  IsEnabled="{Binding !IsUpdating}" Command="{Binding InstallUpdateCommand}"
+                  Content="{Binding [update.install], Source={x:Static s:Loc.Instance}}" />
+          <Button Grid.Column="2" Margin="{StaticResource GapStart}" Command="{Binding InstallUpdateCommand}"
+                  Content="{Binding [update.download], Source={x:Static s:Loc.Instance}}">
+            <Button.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.And}">
+                <Binding Path="HasUpdate" />
+                <Binding Path="!CanInstallUpdate" />
+              </MultiBinding>
+            </Button.IsVisible>
+          </Button>
+        </Grid>
+      </Border>
+
+      <!-- Notice: no warranty, to be read and accepted before the first use -->
+      <Border Classes="notice">
+        <StackPanel Spacing="{StaticResource Space2}">
+          <Grid ColumnDefinitions="Auto,*">
+            <PathIcon Data="{StaticResource IconWarning}" Margin="{StaticResource IconLeadTall}" VerticalAlignment="Top" />
+            <StackPanel Grid.Column="1" Spacing="{StaticResource Space1}">
+              <TextBlock FontWeight="SemiBold" Text="{Binding [welcome.notice.title], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="{Binding [welcome.notice.body], Source={x:Static s:Loc.Instance}}" />
+            </StackPanel>
+          </Grid>
+          <CheckBox IsChecked="{Binding NoticeAccepted}" Margin="{StaticResource NoticeIndent}">
+            <TextBlock TextWrapping="Wrap" Text="{Binding [welcome.notice.accept], Source={x:Static s:Loc.Instance}}" />
+          </CheckBox>
+        </StackPanel>
+      </Border>
+
+      <Button Classes="primary large" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="{StaticResource GapAboveXs}"
+              Command="{Binding ContinueCommand}"
+              Content="{Binding [welcome.continue], Source={x:Static s:Loc.Instance}}" />
+    </StackPanel>
+  </StackPanel>
+</Window>

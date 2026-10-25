@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PurgeCad.Core/PurgeCad.Core.csproj" />
+    <Project Path="src/PurgeCad.Localization/PurgeCad.Localization.csproj" />
+    <Project Path="src/PurgeCad.Engines.ACadSharp/PurgeCad.Engines.ACadSharp.csproj" />
+    <Project Path="src/PurgeCad.Engines.AutoCad/PurgeCad.Engines.AutoCad.csproj" />
+    <Project Path="src/PurgeCad.App/PurgeCad.App.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/PurgeCad.Proof/PurgeCad.Proof.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PurgeCad.Core.Tests/PurgeCad.Core.Tests.csproj" />
+  </Folder>
+</Solution>

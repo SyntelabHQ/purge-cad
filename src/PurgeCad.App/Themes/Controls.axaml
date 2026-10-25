@@ -1,0 +1,526 @@
+<!--
+  Component styles built only from tokens (Tokens.axaml). Views compose these through classes:
+    Text:     brand, title, subtitle, section, secondary, caption, mono, stat
+    Surfaces: Border.titleBar, Border.sidebar, Border.card, Border.tile, Border.stat, Border.notice, Border.appMark, Border.iconTile
+    Pills:    Border.segmented + RadioButton.segment, ToggleButton.chip, Border.badge, Border.status
+    Choices:  RadioButton.tile (selectable card with a dot)
+    Buttons:  Button (default), Button.primary, Button.large, Button.icon, Button.ghost, Button.row
+    Layout:   GridSplitter.panel
+  Note: in Avalonia the later style wins when two match, so icon colours that override others come last.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource Background}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    <Setter Property="FontFamily" Value="{DynamicResource FontUi}" />
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+  </Style>
+
+  <!-- ===== Text ===== -->
+  <Style Selector="TextBlock.brand">
+    <Setter Property="FontFamily" Value="{DynamicResource FontBrand}" />
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeBrand}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.subtitle">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeSubtitle}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.secondary">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="{DynamicResource FontMono}" />
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.warning">
+    <Setter Property="Foreground" Value="{DynamicResource Warning}" />
+  </Style>
+  <Style Selector="TextBlock.stat">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeStat}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <!-- ===== Surfaces ===== -->
+  <Style Selector="Border.titleBar">
+    <Setter Property="Background" Value="{DynamicResource TitleBar}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="BorderThickness" Value="{StaticResource BorderBottom}" />
+    <Setter Property="Height" Value="{StaticResource TitleBarHeight}" />
+  </Style>
+  <Style Selector="Border.sidebar">
+    <Setter Property="Background" Value="{DynamicResource Sidebar}" />
+  </Style>
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="BorderThickness" Value="{StaticResource BorderThin}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusLarge}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingCard}" />
+  </Style>
+  <Style Selector="Border.tile">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="BorderThickness" Value="{StaticResource BorderThin}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusLarge}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingTile}" />
+  </Style>
+  <Style Selector="Border.stat">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingStat}" />
+  </Style>
+  <Style Selector="Border.stat.Purged TextBlock.stat"><Setter Property="Foreground" Value="{DynamicResource Success}" /></Style>
+  <Style Selector="Border.stat.Skipped TextBlock.stat"><Setter Property="Foreground" Value="{DynamicResource Warning}" /></Style>
+  <Style Selector="Border.stat.Failed TextBlock.stat"><Setter Property="Foreground" Value="{DynamicResource Danger}" /></Style>
+  <Style Selector="Border.stat.Saved TextBlock.stat"><Setter Property="Foreground" Value="{DynamicResource Success}" /></Style>
+
+  <Style Selector="Border.notice">
+    <Setter Property="Background" Value="{DynamicResource WarningSubtle}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingNotice}" />
+  </Style>
+  <Style Selector="Border.notice.info">
+    <Setter Property="Background" Value="{DynamicResource InfoSubtle}" />
+  </Style>
+  <Style Selector="Border.notice TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+
+  <!-- App mark: the only place the brand colour fills a surface -->
+  <Style Selector="Border.appMark">
+    <Setter Property="Background" Value="{DynamicResource Brand}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="Width" Value="{StaticResource AppMarkSize}" />
+    <Setter Property="Height" Value="{StaticResource AppMarkSize}" />
+  </Style>
+
+  <Style Selector="Border.iconTile">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}" />
+    <Setter Property="Width" Value="{StaticResource IconTileSize}" />
+    <Setter Property="Height" Value="{StaticResource IconTileSize}" />
+  </Style>
+
+  <Style Selector="Separator">
+    <Setter Property="Background" Value="{DynamicResource Border}" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="Height" Value="{StaticResource HairlineSize}" />
+  </Style>
+
+  <!-- ===== Resizable panels ===== -->
+  <Style Selector="GridSplitter.panel">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Width" Value="{StaticResource SplitterWidth}" />
+    <Setter Property="ResizeDirection" Value="Columns" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent">
+          <Rectangle Name="Line" Width="{StaticResource SplitterLineWidth}" Fill="{DynamicResource Border}" HorizontalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="GridSplitter.panel:pointerover /template/ Rectangle#Line">
+    <Setter Property="Width" Value="{StaticResource SplitterLineWidthHover}" />
+    <Setter Property="Fill" Value="{DynamicResource Focus}" />
+  </Style>
+
+  <!-- ===== Segmented pill (theme switch, mode switch, small number choices) ===== -->
+  <Style Selector="Border.segmented">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingSegmented}" />
+  </Style>
+  <Style Selector="RadioButton.segment">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingSegment}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="PART_Segment" Background="{TemplateBinding Background}"
+                CornerRadius="{StaticResource RadiusSmall}" Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.segment:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="RadioButton.segment:checked">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="RadioButton.segment:checked /template/ Border#PART_Segment">
+    <Setter Property="BoxShadow" Value="{StaticResource ShadowRaised}" />
+  </Style>
+
+  <!-- ===== Selectable tile (engine, output mode) ===== -->
+  <Style Selector="RadioButton.tile">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="BorderThickness" Value="{StaticResource BorderThin}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingTile}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource RadiusLarge}"
+                Padding="{TemplateBinding Padding}">
+          <Grid ColumnDefinitions="Auto,*">
+            <Border Name="Dot" Width="{StaticResource TileDotSize}" Height="{StaticResource TileDotSize}" CornerRadius="{StaticResource RadiusTileDot}"
+                    BorderThickness="{StaticResource BorderTileDot}"
+                    BorderBrush="{DynamicResource BorderStrong}" Background="{DynamicResource Surface}"
+                    VerticalAlignment="Top" Margin="{StaticResource TileDotMargin}">
+              <Ellipse Name="DotInner" Width="{StaticResource TileDotInnerSize}" Height="{StaticResource TileDotInnerSize}" Fill="{DynamicResource OnAccent}" IsVisible="False" />
+            </Border>
+            <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              HorizontalContentAlignment="Stretch" />
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.tile:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+  </Style>
+  <Style Selector="RadioButton.tile:checked">
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+  </Style>
+  <Style Selector="RadioButton.tile:checked /template/ Border#Dot">
+    <Setter Property="Background" Value="{DynamicResource Accent}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+  </Style>
+  <Style Selector="RadioButton.tile:checked /template/ Ellipse#DotInner">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="RadioButton.tile:disabled">
+    <Setter Property="Opacity" Value="{StaticResource DisabledOpacity}" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+
+  <!-- ===== Chips (on/off filters) ===== -->
+  <Style Selector="ToggleButton.chip">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="BorderThickness" Value="{StaticResource BorderThin}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingChip}" />
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Margin" Value="{StaticResource ChipMargin}" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource RadiusPill}"
+                Padding="{TemplateBinding Padding}">
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceChip}">
+            <PathIcon Name="Check" Data="{StaticResource IconCheck}" Width="{StaticResource IconSizeCheck}" Height="{StaticResource IconSizeCheck}" IsVisible="False"
+                      Foreground="{TemplateBinding Foreground}" />
+            <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                              VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.chip:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:checked">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:checked /template/ PathIcon#Check">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="ToggleButton.chip.danger:checked">
+    <Setter Property="Background" Value="{DynamicResource DangerSubtle}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Danger}" />
+    <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+  </Style>
+
+  <!-- ===== Badges and status pills ===== -->
+  <Style Selector="Border.badge">
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingBadge}" />
+    <Setter Property="Background" Value="{DynamicResource NeutralSubtle}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.badge TextBlock">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="Border.badge.VeryLow"><Setter Property="Background" Value="{DynamicResource SuccessSubtle}" /></Style>
+  <Style Selector="Border.badge.VeryLow TextBlock"><Setter Property="Foreground" Value="{DynamicResource Success}" /></Style>
+  <Style Selector="Border.badge.Medium"><Setter Property="Background" Value="{DynamicResource WarningSubtle}" /></Style>
+  <Style Selector="Border.badge.Medium TextBlock"><Setter Property="Foreground" Value="{DynamicResource Warning}" /></Style>
+
+  <Style Selector="Border.status">
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingStatus}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource NeutralSubtle}" />
+  </Style>
+  <Style Selector="Border.status TextBlock">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="Border.status.Purged"><Setter Property="Background" Value="{DynamicResource SuccessSubtle}" /></Style>
+  <Style Selector="Border.status.Purged TextBlock"><Setter Property="Foreground" Value="{DynamicResource Success}" /></Style>
+  <Style Selector="Border.status.Skipped"><Setter Property="Background" Value="{DynamicResource WarningSubtle}" /></Style>
+  <Style Selector="Border.status.Skipped TextBlock"><Setter Property="Foreground" Value="{DynamicResource Warning}" /></Style>
+  <Style Selector="Border.status.Failed"><Setter Property="Background" Value="{DynamicResource DangerSubtle}" /></Style>
+  <Style Selector="Border.status.Failed TextBlock"><Setter Property="Foreground" Value="{DynamicResource Danger}" /></Style>
+  <Style Selector="Border.status.Running"><Setter Property="Background" Value="{DynamicResource InfoSubtle}" /></Style>
+  <Style Selector="Border.status.Running TextBlock"><Setter Property="Foreground" Value="{DynamicResource Info}" /></Style>
+
+  <!-- ===== Buttons ===== -->
+  <Style Selector="Button">
+    <Setter Property="MinHeight" Value="{StaticResource ControlHeight}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingControl}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}" />
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="BorderThickness" Value="{StaticResource BorderThin}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+  </Style>
+  <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource Accent}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
+  </Style>
+
+  <Style Selector="Button.large">
+    <Setter Property="MinHeight" Value="{StaticResource ControlHeightLarge}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingButtonLarge}" />
+  </Style>
+
+  <Style Selector="Button.icon, Button.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="Button.icon">
+    <Setter Property="Padding" Value="{StaticResource PaddingIcon}" />
+  </Style>
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+  </Style>
+
+  <!-- "Version x available" pill in the title bar -->
+  <Style Selector="Button.update">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingSegment}" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+
+  <!-- Full-width list row button (About links) -->
+  <Style Selector="Button.row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingButtonRow}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="Button.row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+  </Style>
+
+  <!-- ===== Inputs ===== -->
+  <Style Selector="TextBox">
+    <Setter Property="MinHeight" Value="{StaticResource ControlHeight}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusMedium}" />
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+  </Style>
+  <Style Selector="ToggleSwitch">
+    <Setter Property="OnContent" Value="" />
+    <Setter Property="OffContent" Value="" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+
+  <!-- ===== Scroll bars: always shown at full width (no thin auto-hide line), no arrow buttons ===== -->
+  <Style Selector="ScrollViewer">
+    <Setter Property="AllowAutoHide" Value="False" />
+  </Style>
+  <!-- Lists and popups pass their own attached value to the inner ScrollViewer, so set it there too -->
+  <Style Selector="ListBox, ComboBox, TextBox, FlyoutPresenter, ItemsControl">
+    <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
+  </Style>
+  <Style Selector="FlyoutPresenter">
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+  </Style>
+  <Style Selector="ScrollBar /template/ RepeatButton#PART_LineUpButton, ScrollBar /template/ RepeatButton#PART_LineDownButton">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="Background" Value="{DynamicResource BorderStrong}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb:pointerover">
+    <Setter Property="Background" Value="{DynamicResource TextMuted}" />
+  </Style>
+
+  <!-- ===== Progress ===== -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Height" Value="{StaticResource ProgressHeight}" />
+    <Setter Property="MinHeight" Value="{StaticResource ProgressHeight}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+  </Style>
+
+  <!-- ===== Results rows ===== -->
+  <Style Selector="Border.resultRow">
+    <Setter Property="Padding" Value="{StaticResource PaddingRow}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+    <Setter Property="BorderThickness" Value="{StaticResource BorderTop}" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <!-- Row checkboxes take the row's height, not Fluent's 32 px minimum -->
+  <Style Selector="Border.resultRow CheckBox, CheckBox.compact">
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <!-- Files left out of the run stay listed, dimmed -->
+  <Style Selector="Border.resultRow.excluded">
+    <Setter Property="Opacity" Value="{StaticResource ExcludedOpacity}" />
+  </Style>
+  <Style Selector="Border.resultRow:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+  </Style>
+
+  <!-- ===== Language list rows ===== -->
+  <Style Selector="ListBox.languages">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.languages ListBoxItem">
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
+    <Setter Property="Padding" Value="{StaticResource PaddingListItem}" />
+  </Style>
+  <Style Selector="ListBox.languages ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+  </Style>
+  <Style Selector="ListBox.languages ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+  </Style>
+
+  <!-- ===== Icon colours (last, so they win) ===== -->
+  <Style Selector="PathIcon">
+    <Setter Property="Width" Value="{StaticResource IconSize}" />
+    <Setter Property="Height" Value="{StaticResource IconSize}" />
+  </Style>
+  <Style Selector="Button PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="Button.primary PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+  </Style>
+  <Style Selector="Button:disabled PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+  <Style Selector="Button.icon PathIcon">
+    <Setter Property="Width" Value="{StaticResource IconSizeLarge}" />
+    <Setter Property="Height" Value="{StaticResource IconSizeLarge}" />
+  </Style>
+  <Style Selector="Button.icon:pointerover PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="RadioButton.segment PathIcon">
+    <Setter Property="Width" Value="{StaticResource IconSizeSmall}" />
+    <Setter Property="Height" Value="{StaticResource IconSizeSmall}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+  <Style Selector="RadioButton.segment:pointerover PathIcon, RadioButton.segment:checked PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="Border.iconTile PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="Border.appMark PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource OnBrand}" />
+    <Setter Property="Width" Value="{StaticResource IconSizeSmall}" />
+    <Setter Property="Height" Value="{StaticResource IconSizeSmall}" />
+  </Style>
+  <Style Selector="Border.notice PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Warning}" />
+  </Style>
+  <Style Selector="Border.notice.info PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Info}" />
+  </Style>
+</Styles>

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Core logic: scanning, batch runs, cleanup, reports, settings. No UI and no CAD library here. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="PurgeCad.Core.Tests" />
+  </ItemGroup>
+</Project>

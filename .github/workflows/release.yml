@@ -1,0 +1,69 @@
+# macOS and Linux builds of a release. Runs when a release is published (the Windows build,
+# build/release-windows.ps1 -Upload, publishes it), or by hand for a tag. Adds the macOS / Linux installers
+# and update packages to that release; installed copies update themselves from there (Velopack).
+name: Release (macOS, Linux)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v1.0.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      # one job at a time: each adds its files to the same release
+      max-parallel: 1
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            channel: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+            channel: osx-arm64
+          - os: macos-latest
+            rid: osx-x64
+            channel: osx-x64
+    runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version from the tag
+        run: echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - run: dotnet tool restore
+
+      - name: Publish
+        run: dotnet publish src/PurgeCad.App -c Release -r ${{ matrix.rid }} --self-contained -o artifacts/publish -p:Version=$VERSION
+
+      - name: Previous release (for delta updates)
+        continue-on-error: true   # the first release has none
+        run: dotnet vpk download github --repoUrl ${{ github.server_url }}/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.channel }} -o artifacts/releases
+
+      - name: Pack
+        run: >
+          dotnet vpk pack --packId PurgeCAD --packVersion $VERSION --packDir artifacts/publish
+          --mainExe PurgeCAD --packTitle PurgeCAD --packAuthors Syntelab --channel ${{ matrix.channel }}
+          --outputDir artifacts/releases
+
+      - name: Upload to the release
+        run: >
+          dotnet vpk upload github --repoUrl ${{ github.server_url }}/${{ github.repository }}
+          --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.channel }} -o artifacts/releases
+          --tag $TAG --releaseName "PurgeCAD $VERSION" --merge --publish

@@ -1,0 +1,20 @@
+<!-- Confirmation, optionally with a list of files (e.g. auxiliary cleanup). -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:PurgeCad.App.Services"
+        x:Class="PurgeCad.App.Views.ConfirmDialog"
+        Icon="/Assets/purge-cad.ico"
+        Width="{StaticResource ConfirmWidth}" SizeToContent="Height" WindowStartupLocation="CenterOwner" CanResize="False"
+        FlowDirection="{Binding Language.RightToLeft, Source={x:Static s:Loc.Instance}, Converter={x:Static s:Converters.FlowDirection}}">
+  <StackPanel Margin="{StaticResource DialogInset}" Spacing="{StaticResource Space3}">
+    <TextBlock x:Name="Heading" Classes="title" TextWrapping="Wrap" />
+    <TextBlock x:Name="Body" Classes="secondary" TextWrapping="Wrap" />
+    <Border x:Name="ItemsCard" Classes="tile" Padding="{StaticResource PaddingList}" MaxHeight="{StaticResource ConfirmListMaxHeight}">
+      <ListBox x:Name="Items" Background="Transparent" />
+    </Border>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{StaticResource Space2}" Margin="{StaticResource GapAboveXs}">
+      <Button x:Name="Cancel" MinWidth="{StaticResource DialogButtonMinWidth}" HorizontalContentAlignment="Center" />
+      <Button x:Name="Ok" Classes="primary" MinWidth="{StaticResource DialogButtonMinWidth}" HorizontalContentAlignment="Center" />
+    </StackPanel>
+  </StackPanel>
+</Window>

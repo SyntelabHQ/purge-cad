@@ -1,0 +1,91 @@
+<!--
+  Searchable language picker, like the one on syntelab.com. DataContext: LanguagePickerViewModel.
+  Default look: two lines (native + English name). Add Classes="compact" for the one-line header version.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:PurgeCad.App.Services"
+             xmlns:c="using:PurgeCad.App.Controls"
+             x:Class="PurgeCad.App.Controls.LanguagePicker">
+  <UserControl.Styles>
+    <Style Selector="StackPanel#OneLine"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="c|LanguagePicker.compact StackPanel#TwoLine"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="c|LanguagePicker.compact StackPanel#OneLine"><Setter Property="IsVisible" Value="True" /></Style>
+    <Style Selector="ToggleButton#Toggle">
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ToggleButton#Toggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+    <Style Selector="ToggleButton#Toggle:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+    <!-- Compact: borderless ghost button for the title bar -->
+    <Style Selector="c|LanguagePicker.compact ToggleButton#Toggle">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="{StaticResource PaddingSegmentCompact}" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="c|LanguagePicker.compact ToggleButton#Toggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceSunken}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <ToggleButton x:Name="Toggle" IsChecked="{Binding IsOpen, Mode=TwoWay}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  CornerRadius="{StaticResource RadiusMedium}" Padding="{StaticResource PaddingControl}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel x:Name="TwoLine">
+          <TextBlock Text="{Binding Selected.Title}" FontWeight="SemiBold" />
+          <TextBlock Classes="caption" Text="{Binding Selected.Subtitle}" />
+        </StackPanel>
+        <StackPanel x:Name="OneLine" Orientation="Horizontal" Spacing="{StaticResource Space2}">
+          <PathIcon Data="{StaticResource IconGlobe}" Width="{StaticResource IconSize}" Height="{StaticResource IconSize}"
+                    Foreground="{DynamicResource TextSecondary}" />
+          <TextBlock Text="{Binding Selected.Title}" FontWeight="Medium" FontSize="{DynamicResource FontSizeSmall}" VerticalAlignment="Center" />
+        </StackPanel>
+        <PathIcon Grid.Column="1" Data="{StaticResource IconChevronDown}" Width="{StaticResource IconSizeXSmall}" Height="{StaticResource IconSizeXSmall}"
+                  Foreground="{DynamicResource TextMuted}" Margin="{StaticResource GapStartSm}" VerticalAlignment="Center" />
+      </Grid>
+    </ToggleButton>
+
+    <Popup IsOpen="{Binding IsOpen, Mode=TwoWay}" PlacementTarget="{Binding #Toggle}" Placement="BottomEdgeAlignedRight"
+           IsLightDismissEnabled="True" MinWidth="{Binding #Toggle.Bounds.Width}" Width="{StaticResource LanguagePopupWidth}" VerticalOffset="{StaticResource PopupOffset}">
+      <Border Classes="card" Padding="{StaticResource PaddingIcon}" BoxShadow="{StaticResource ShadowPopup}">
+        <DockPanel>
+          <TextBox DockPanel.Dock="Top" x:Name="Search" Text="{Binding SearchText}"
+                   Watermark="{Binding [language.search], Source={x:Static s:Loc.Instance}}"
+                   Margin="{StaticResource GapBelow}">
+            <TextBox.InnerLeftContent>
+              <PathIcon Data="{StaticResource IconSearch}" Width="{StaticResource IconSize}" Height="{StaticResource IconSize}" Margin="{StaticResource GapStartMd}"
+                        Foreground="{DynamicResource TextMuted}" />
+            </TextBox.InnerLeftContent>
+          </TextBox>
+          <ListBox x:Name="List" Classes="languages" ItemsSource="{Binding Filtered}"
+                   SelectedItem="{Binding Selected, Mode=OneWay}" MaxHeight="{StaticResource LanguageListMaxHeight}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                    <TextBlock Classes="caption" Text="{Binding Subtitle}" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Classes="mono" Text="{Binding CodeLabel}" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Popup>
+  </Panel>
+</UserControl>

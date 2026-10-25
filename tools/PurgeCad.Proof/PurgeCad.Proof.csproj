@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Proof tool for the ACadSharp engine (docs/SPEC.md §11). Not shipped.
+    Usage: see docs/PROOF.md (input folder, then output folder).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PurgeCad.Engines.ACadSharp\PurgeCad.Engines.ACadSharp.csproj" />
+  </ItemGroup>
+</Project>

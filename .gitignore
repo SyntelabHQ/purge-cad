@@ -1,0 +1,21 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+artifacts/
+publish/
+TestResults/
+*.purgecad.tmp
+refference-project/
+
+# Test drawings are private (client files): never commit them.
+tests/samples/*
+!tests/samples/.gitkeep
+!tests/samples/README.md
+tests/output/
+
+# Local leftovers, never published
+_to_delete/
+*.log

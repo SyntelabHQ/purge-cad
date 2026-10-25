@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Language list and string loading. No UI dependency. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Strings\*.json" LogicalName="PurgeCad.Strings.%(Filename).json" />
+  </ItemGroup>
+</Project>

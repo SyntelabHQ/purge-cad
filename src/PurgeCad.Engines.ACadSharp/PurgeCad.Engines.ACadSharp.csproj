@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Purge engine on ACadSharp (MIT). Runs everywhere, no AutoCAD needed. -->
+  <ItemGroup>
+    <PackageReference Include="ACadSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PurgeCad.Core\PurgeCad.Core.csproj" />
+  </ItemGroup>
+</Project>

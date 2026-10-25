@@ -1,0 +1,24 @@
+<Project>
+  <!-- Central package versions. Change a version here only. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <AvaloniaVersion>11.3.22</AvaloniaVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="ACadSharp" Version="3.8.0" />
+    <!-- AutoCAD API, compile-time only, for the accoreconsole plugin (25.0.0 = AutoCAD 2025, .NET 8; the
+         .NET Framework build overrides it with 20.0.0 = AutoCAD 2015). -->
+    <PackageVersion Include="AutoCAD.NET.Core" Version="25.0.0" />
+    <PackageVersion Include="AutoCAD.NET.Model" Version="25.0.0" />
+    <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
+    <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- One-click updates from GitHub releases (installer + updater). -->
+    <PackageVersion Include="Velopack" Version="1.2.161" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+  </ItemGroup>
+</Project>

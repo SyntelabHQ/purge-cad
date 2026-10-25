@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Purge engine that drives AutoCAD's accoreconsole.exe (Windows, full AutoCAD only).
+    The plugin loaded inside accoreconsole (PurgeCad.AutoCad.Plugin, net462 + net8.0-windows) is a separate
+    project; the app build copies it next to PurgeCAD.exe (see AutoCadPlugin.cs).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\PurgeCad.Core\PurgeCad.Core.csproj" />
+  </ItemGroup>
+</Project>

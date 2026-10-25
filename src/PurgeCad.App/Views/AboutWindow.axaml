@@ -1,0 +1,120 @@
+<!--
+  About: name, publisher, links, credits, license, notices.
+  Modified versions (forks) must add the attribution notice from Brand.AttributionNotice here
+  ("Based on PurgeCAD by Syntelab …"), as required by ADDITIONAL-TERMS.md. The original app does not show it.
+-->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:PurgeCad.App.Services"
+        xmlns:b="using:PurgeCad.Core.Branding"
+        xmlns:v="using:PurgeCad.App.Views"
+        x:Class="PurgeCad.App.Views.AboutWindow"
+        Icon="/Assets/purge-cad.ico"
+        Width="{StaticResource AboutWidth}" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner"
+        Title="{Binding [about.title], Source={x:Static s:Loc.Instance}}"
+        FlowDirection="{Binding Language.RightToLeft, Source={x:Static s:Loc.Instance}, Converter={x:Static s:Converters.FlowDirection}}">
+  <StackPanel Margin="{StaticResource AboutInset}" Spacing="{StaticResource Space4}">
+    <!-- Identity -->
+    <Grid ColumnDefinitions="Auto,*">
+      <Border Classes="appMark" Width="{StaticResource AppMarkSizeDialog}" Height="{StaticResource AppMarkSizeDialog}"
+              CornerRadius="{StaticResource RadiusAppMarkDialog}">
+        <PathIcon Data="{StaticResource IconPurgeCad}" Width="{StaticResource IconSizeDialog}" Height="{StaticResource IconSizeDialog}" />
+      </Border>
+      <StackPanel Grid.Column="1" Margin="{StaticResource GapStartLg}" VerticalAlignment="Center" Spacing="{StaticResource SpaceHair}">
+        <TextBlock Classes="brand" Text="{x:Static b:Brand.AppName}" FontSize="{StaticResource FontSizeDialogBrand}" />
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+          <TextBlock Classes="caption" x:Name="ByLine" />
+          <TextBlock Classes="caption" Text="·" />
+          <TextBlock Classes="caption" x:Name="Version" />
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+    <TextBlock Classes="secondary" Text="{Binding [app.tagline], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
+
+    <!-- Links: 2 × 2 -->
+    <ItemsControl x:Name="Links">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="v:AboutLink">
+          <Button Classes="row" Command="{Binding OpenCommand}" ToolTip.Tip="{Binding Url}" Margin="{StaticResource LinkCellMargin}">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Classes="iconTile" Width="{StaticResource IconTileSizeSmall}" Height="{StaticResource IconTileSizeSmall}" Margin="{StaticResource GapEnd}">
+                <PathIcon Data="{Binding Icon}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Medium" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- AutoCAD engine logs, to see what happened to a file -->
+    <Button Classes="row" x:Name="LogsButton" Margin="{StaticResource PullUp}">
+      <Grid ColumnDefinitions="Auto,*">
+        <Border Classes="iconTile" Width="{StaticResource IconTileSizeSmall}" Height="{StaticResource IconTileSizeSmall}" Margin="{StaticResource GapEnd}">
+          <PathIcon Data="{StaticResource IconFolder}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
+        </Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+          <TextBlock Text="{Binding [about.logs], Source={x:Static s:Loc.Instance}}" FontWeight="Medium" />
+          <TextBlock Classes="caption" x:Name="LogsPath" TextTrimming="PathSegmentEllipsis" />
+        </StackPanel>
+      </Grid>
+    </Button>
+
+    <!-- Updates -->
+    <Border Classes="tile">
+      <StackPanel Spacing="{StaticResource SpaceInline}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock x:Name="UpdateStatus" TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEnd}" />
+          <Button Grid.Column="1" x:Name="CheckUpdatesButton"
+                  Content="{Binding [update.checkNow], Source={x:Static s:Loc.Instance}}" />
+        </Grid>
+        <Button Classes="primary" x:Name="DownloadButton" IsVisible="False" HorizontalAlignment="Left"
+                Content="{Binding [update.download], Source={x:Static s:Loc.Instance}}" />
+        <CheckBox x:Name="AutoCheck" Content="{Binding [update.auto], Source={x:Static s:Loc.Instance}}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Credits -->
+    <Border Classes="tile">
+      <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+        <Grid.Styles>
+          <Style Selector="TextBlock">
+            <Setter Property="Margin" Value="{StaticResource CreditValueMargin}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+          </Style>
+          <Style Selector="TextBlock.caption">
+            <Setter Property="Margin" Value="{StaticResource CreditLabelMargin}" />
+          </Style>
+        </Grid.Styles>
+        <TextBlock Classes="caption" Text="{Binding [about.label.license], Source={x:Static s:Loc.Instance}}" />
+        <TextBlock Grid.Column="1" Text="{Binding [about.value.license], Source={x:Static s:Loc.Instance}}" />
+        <TextBlock Grid.Row="1" Classes="caption" Text="{Binding [about.label.icon], Source={x:Static s:Loc.Instance}}" />
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="Font Awesome Free (CC BY 4.0)" />
+        <TextBlock Grid.Row="2" Classes="caption" Text="{Binding [about.label.fonts], Source={x:Static s:Loc.Instance}}" />
+        <TextBlock Grid.Row="2" Grid.Column="1" Text="Sansation, Noto Sans (SIL OFL 1.1)" />
+        <TextBlock Grid.Row="3" Classes="caption" Text="{Binding [about.label.libraries], Source={x:Static s:Loc.Instance}}" />
+        <TextBlock Grid.Row="3" Grid.Column="1" Text="Avalonia, ACadSharp, CommunityToolkit.Mvvm, Velopack (MIT)" />
+      </Grid>
+    </Border>
+
+    <Border Classes="notice">
+      <Grid ColumnDefinitions="Auto,*">
+        <PathIcon Data="{StaticResource IconWarning}" Margin="{StaticResource IconLead}" VerticalAlignment="Top" />
+        <TextBlock Grid.Column="1" Classes="caption" TextWrapping="Wrap"
+                   Text="{Binding [about.noWarranty], Source={x:Static s:Loc.Instance}}" />
+      </Grid>
+    </Border>
+
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Classes="caption" TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEndLg}"
+                 Text="{Binding [about.autodesk], Source={x:Static s:Loc.Instance}}" />
+      <Button Grid.Column="1" x:Name="CloseButton" MinWidth="{StaticResource CloseButtonMinWidth}" HorizontalContentAlignment="Center" VerticalAlignment="Bottom"
+              Content="{Binding [common.close], Source={x:Static s:Loc.Instance}}" />
+    </Grid>
+  </StackPanel>
+</Window>
