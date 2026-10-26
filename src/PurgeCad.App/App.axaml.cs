@@ -29,6 +29,10 @@ public partial class App : Application
 
     static Action<AvailableUpdate?> OpenMain(IClassicDesktopStyleApplicationLifetime desktop) => update =>
     {
+        // the Explorer entry, in the chosen language (only for the installed app, not a development build)
+        if (OperatingSystem.IsWindows() && UpdateService.IsInstalled)
+            ShellIntegration.Register(Loc.Instance["shell.folder"], Loc.Instance["shell.files"]);
+
         var previous = desktop.MainWindow;
         desktop.MainWindow = new MainWindow { DataContext = new MainViewModel(update) };
         desktop.MainWindow.Show();

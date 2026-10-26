@@ -26,6 +26,12 @@ public static class Brand
             ? $"{AppsUrl}/{AppSlug}"
             : $"{AppsUrl}/{languageCode}/{AppSlug}";
 
+    /// <summary>Support page: English has no language segment, other languages use /&lt;code&gt;/support.</summary>
+    public static string SupportUrl(string languageCode) =>
+        string.IsNullOrEmpty(languageCode) || languageCode.Equals("en", StringComparison.OrdinalIgnoreCase)
+            ? $"{WebsiteUrl}/support"
+            : $"{WebsiteUrl}/{languageCode}/support";
+
     public const string AttributionNotice =
         "Based on PurgeCAD by Syntelab — https://syntelab.com/apps/purge-cad\n" +
         "Part of Syntelab Apps — https://syntelab.com/apps";

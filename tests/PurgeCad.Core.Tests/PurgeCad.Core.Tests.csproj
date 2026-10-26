@@ -14,5 +14,6 @@
     <ProjectReference Include="..\..\src\PurgeCad.Core\PurgeCad.Core.csproj" />
     <ProjectReference Include="..\..\src\PurgeCad.Localization\PurgeCad.Localization.csproj" />
     <ProjectReference Include="..\..\src\PurgeCad.Engines.AutoCad\PurgeCad.Engines.AutoCad.csproj" />
+    <ProjectReference Include="..\..\src\PurgeCad.Engines.ACadSharp\PurgeCad.Engines.ACadSharp.csproj" />
   </ItemGroup>
 </Project>

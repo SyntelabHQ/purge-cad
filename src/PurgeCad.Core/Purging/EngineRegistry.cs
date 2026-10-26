@@ -31,4 +31,20 @@ public sealed class EngineRegistry
         var engine = Find(choiceId);
         return engine is not null && engine.CheckAvailability().IsAvailable ? engine : null;
     }
+
+    /// <summary>
+    /// The engine a run uses. Like <see cref="Resolve"/>, but "auto" with two engines available gets a fallback:
+    /// the next engine tries the files the first one cannot do.
+    /// </summary>
+    public IPurgeEngine? ResolveForRun(string choiceId)
+    {
+        if (choiceId != AutomaticId) return Resolve(choiceId);
+        var available = _engines.Where(e => e.CheckAvailability().IsAvailable).OrderBy(e => e.Risk).ToList();
+        return available.Count switch
+        {
+            0 => null,
+            1 => available[0],
+            _ => new FallbackEngine(available[0], available[1]),
+        };
+    }
 }

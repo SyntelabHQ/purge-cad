@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
@@ -6,7 +7,9 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
 using PurgeCad.App.Services;
 using PurgeCad.Core.Branding;
-using PurgeCad.Engines.AutoCad;
+using PurgeCad.Core.News;
+using PurgeCad.Core.Purging;
+using PurgeCad.Core.Updates;
 
 namespace PurgeCad.App.Views;
 
@@ -19,9 +22,38 @@ public sealed class AboutLink(string title, string url, Geometry? icon, TopLevel
     public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(() => owner.Launcher.LaunchUriAsync(new Uri(url)));
 }
 
+/// <summary>A release in What's new.</summary>
+public sealed class AboutRelease(ReleaseNote note, TopLevel owner)
+{
+    public string Tag { get; } = note.Tag;
+    public string DateText { get; } = note.Date?.ToString("d", Loc.Instance.Culture) ?? "";
+    public string Notes { get; } = note.Notes;
+    public string Url { get; } = note.PageUrl;
+    public bool IsCurrent { get; } = UpdateChecker.ParseVersion(note.Tag) == UpdateChecker.CurrentVersion;
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(() => owner.Launcher.LaunchUriAsync(new Uri(note.PageUrl)));
+}
+
+/// <summary>A message in Messages.</summary>
+public sealed class AboutNews(NewsItem item, TopLevel owner)
+{
+    public string Title { get; } = item.Title;
+    public string Text { get; } = item.Text;
+    public string DateText { get; } = item.Date?.ToString("d", Loc.Instance.Culture) ?? "";
+    public string? Link { get; } = item.Link;
+    public bool HasLink => Link is not null;
+    public bool IsWarning { get; } = item.IsWarning;
+    public IAsyncRelayCommand OpenCommand { get; } = new AsyncRelayCommand(async () =>
+    {
+        if (item.Link is { } link) await owner.Launcher.LaunchUriAsync(new Uri(link));
+    });
+}
+
 public partial class AboutWindow : Window
 {
-    public AboutWindow()
+    public AboutWindow() : this(0) { }
+
+    /// <summary>Opens on a tab: 0 About, 1 What's new, 2 Messages, 3 Help.</summary>
+    public AboutWindow(int tab = 0)
     {
         AvaloniaXamlLoader.Load(this);
         var loc = Loc.Instance;
@@ -38,7 +70,52 @@ public partial class AboutWindow : Window
             new AboutLink(loc["about.source"], Brand.SourceCodeUrl, FindIcon("IconCode"), this),
         };
 
-        var logs = AutoCadEngine.LogFolder;
+        var support = this.FindControl<Button>("SupportLink")!;
+        ToolTip.SetTip(support, Brand.SupportUrl(loc.Language.Code));
+        support.Click += async (_, _) => await Launcher.LaunchUriAsync(new Uri(Brand.SupportUrl(loc.Language.Code)));
+
+        SetUpUpdates(loc, version);
+        SetUpHelp(loc);
+        _ = LoadReleasesAsync(loc);
+        _ = LoadNewsAsync(loc);
+
+        var tabs = new[] { "TabAbout", "TabNew", "TabNews", "TabHelp" };
+        this.FindControl<RadioButton>(tabs[Math.Clamp(tab, 0, tabs.Length - 1)])!.IsChecked = true;
+        this.FindControl<Button>("CloseButton")!.Click += (_, _) => Close();
+    }
+
+    async Task LoadReleasesAsync(Loc loc)
+    {
+        var state = this.FindControl<TextBlock>("ReleasesState")!;
+        state.Text = loc["news.loading"];
+        this.FindControl<Button>("AllReleases")!.Click += async (_, _) =>
+            await Launcher.LaunchUriAsync(new Uri($"https://github.com/{Brand.UpdateRepository}/releases"));
+        var releases = await NewsFeed.ReleasesAsync();
+        this.FindControl<ItemsControl>("Releases")!.ItemsSource = releases.Select(r => new AboutRelease(r, this)).ToList();
+        state.Text = releases.Count == 0 ? loc["about.whatsNew.empty"] : "";
+        state.IsVisible = releases.Count == 0;
+    }
+
+    async Task LoadNewsAsync(Loc loc)
+    {
+        var state = this.FindControl<TextBlock>("NewsState")!;
+        state.Text = loc["news.loading"];
+        // the main window already loaded them; ask again only when it has none
+        var news = Owner?.DataContext is ViewModels.MainViewModel { News.Count: > 0 } vm
+            ? vm.News
+            : await NewsFeed.LoadAsync(loc.Language.Code);
+        this.FindControl<ItemsControl>("NewsList")!.ItemsSource = news.Select(n => new AboutNews(n, this)).ToList();
+        state.Text = news.Count == 0 ? loc["news.empty"] : "";
+        state.IsVisible = news.Count == 0;
+        this.FindControl<TextBlock>("NewsCount")!.Text = news.Count.ToString(CultureInfo.CurrentCulture);
+        this.FindControl<Border>("NewsCountBadge")!.IsVisible = news.Count > 0;
+    }
+
+    void SetUpHelp(Loc loc)
+    {
+        this.FindControl<Button>("ReportButton")!.Click += async (_, _) => await Launcher.LaunchUriAsync(new Uri(Reveal.NewIssueUrl()));
+
+        var logs = EngineLogs.Folder;
         this.FindControl<TextBlock>("LogsPath")!.Text = logs;
         var logsButton = this.FindControl<Button>("LogsButton")!;
         ToolTip.SetTip(logsButton, logs);
@@ -46,15 +123,21 @@ public partial class AboutWindow : Window
         {
             try
             {
-                Directory.CreateDirectory(logs); // opens even before the first AutoCAD run
+                Directory.CreateDirectory(logs); // opens even before the first run
                 await Launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(logs));
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         };
 
-        SetUpUpdates(loc, version);
-
-        this.FindControl<Button>("CloseButton")!.Click += (_, _) => Close();
+        var info = Reveal.SystemInfo();
+        this.FindControl<SelectableTextBlock>("SystemInfo")!.Text = info;
+        var copyText = this.FindControl<TextBlock>("CopyInfoText")!;
+        this.FindControl<Button>("CopyInfoButton")!.Click += async (_, _) =>
+        {
+            if (Clipboard is null) return;
+            await Clipboard.SetTextAsync(info);
+            copyText.Text = loc["help.copied"];
+        };
     }
 
     void SetUpUpdates(Loc loc, string version)

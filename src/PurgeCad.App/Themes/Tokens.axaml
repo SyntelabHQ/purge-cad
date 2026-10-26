@@ -181,11 +181,15 @@
   <Thickness x:Key="CreditValueMargin">0,2</Thickness>
   <Thickness x:Key="CreditLabelMargin">0,2,16,2</Thickness>
   <Thickness x:Key="DialogInset">20</Thickness>
+  <Thickness x:Key="GapTopXs">0,2,0,0</Thickness>
+  <Thickness x:Key="GapTopSm">0,4,0,0</Thickness>
+  <Thickness x:Key="GapTopLg">0,16,0,0</Thickness>
   <Thickness x:Key="AboutInset">20,20,20,16</Thickness>
   <Thickness x:Key="WelcomeHeroInset">24,36,24,8</Thickness>
   <Thickness x:Key="WelcomeBodyInset">28,20,28,28</Thickness>
   <Thickness x:Key="PaddingControl">12,6</Thickness>
   <Thickness x:Key="PaddingChip">10,4</Thickness>
+  <Thickness x:Key="PaddingChipIcon">8,4</Thickness>
   <Thickness x:Key="PaddingTile">12,8</Thickness>
   <Thickness x:Key="PaddingCard">16</Thickness>
   <Thickness x:Key="PaddingSidebar">14,12,12,14</Thickness>
@@ -251,7 +255,7 @@
   <x:Double x:Key="TileDotSize">16</x:Double>
   <x:Double x:Key="TileDotInnerSize">6</x:Double>
   <x:Double x:Key="FontSizeDialogBrand">20</x:Double>
-  <GridLength x:Key="SidebarWidth">340</GridLength>
+  <GridLength x:Key="SidebarWidth">364</GridLength>
   <x:Double x:Key="SidebarMinWidth">280</x:Double>
   <x:Double x:Key="SidebarMaxWidth">560</x:Double>
   <x:Double x:Key="SplitterWidth">6</x:Double>
@@ -262,12 +266,18 @@
   <x:Double x:Key="WindowMinWidth">860</x:Double>
   <x:Double x:Key="WindowMinHeight">560</x:Double>
   <x:Double x:Key="MainMinWidth">420</x:Double>
-  <x:Double x:Key="AboutWidth">420</x:Double>
+  <x:Double x:Key="AboutWidth">540</x:Double>
+  <x:Double x:Key="AboutHeight">640</x:Double>
+  <x:Double x:Key="AboutMinWidth">440</x:Double>
+  <x:Double x:Key="AboutMinHeight">460</x:Double>
   <x:Double x:Key="WelcomeWidth">440</x:Double>
   <x:Double x:Key="ConfirmWidth">460</x:Double>
   <x:Double x:Key="ConfirmListMaxHeight">280</x:Double>
   <x:Double x:Key="FlyoutWidth">420</x:Double>
   <x:Double x:Key="FlyoutTextMaxWidth">300</x:Double>
+  <!-- recent folders, profiles, size filter -->
+  <x:Double x:Key="FlyoutWidthNarrow">320</x:Double>
+  <x:Double x:Key="SizeFieldWidth">96</x:Double>
   <x:Double x:Key="EmptyStateMaxWidth">320</x:Double>
   <x:Double x:Key="LanguagePopupWidth">360</x:Double>
   <x:Double x:Key="LanguageListMaxHeight">360</x:Double>
@@ -291,6 +301,10 @@
   <StreamGeometry x:Key="IconSun">M12 7a5 5 0 1 0 0 10a5 5 0 0 0 0-10zM11 1h2v3h-2zM11 20h2v3h-2zM1 11h3v2H1zM20 11h3v2h-3zM4.2 5.6l1.4-1.4l2.1 2.1l-1.4 1.4zM16.3 17.7l1.4-1.4l2.1 2.1l-1.4 1.4zM4.2 18.4l2.1-2.1l1.4 1.4l-2.1 2.1zM16.3 6.3l2.1-2.1l1.4 1.4l-2.1 2.1z</StreamGeometry>
   <StreamGeometry x:Key="IconMoon">M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z</StreamGeometry>
   <StreamGeometry x:Key="IconFolder">M3 5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z</StreamGeometry>
+  <StreamGeometry x:Key="IconHistory">M13 3a9 9 0 0 0-9 9H1l3.9 3.9L9 12H6a7 7 0 1 1 2.1 5l-1.4 1.4A9 9 0 1 0 13 3zm-1 5v5l4.3 2.5l.7-1.2l-3.5-2.1V8z</StreamGeometry>
+  <StreamGeometry x:Key="IconProfiles">M12 2L2 7l10 5l10-5zM2 17l10 5l10-5l-2-1l-8 4l-8-4zm0-5l10 5l10-5l-2-1l-8 4l-8-4z</StreamGeometry>
+  <StreamGeometry x:Key="IconTrash">M9 3h6l1 1h4v2H4V4h4zM6 8h12l-1 13H7z</StreamGeometry>
+  <StreamGeometry x:Key="IconRefresh">M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z</StreamGeometry>
   <StreamGeometry x:Key="IconSearch">M10 3a7 7 0 1 0 4.2 12.6l5.1 5.1l1.4-1.4l-5.1-5.1A7 7 0 0 0 10 3zm0 2a5 5 0 1 1 0 10a5 5 0 0 1 0-10z</StreamGeometry>
   <StreamGeometry x:Key="IconChevronDown">M6.4 8.6L12 14.2l5.6-5.6L19 10l-7 7l-7-7z</StreamGeometry>
   <StreamGeometry x:Key="IconInfo">M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20zm-1 8h2v7h-2zm0-4h2v2h-2z</StreamGeometry>
@@ -305,6 +319,11 @@
   <StreamGeometry x:Key="IconPlay">M8 5v14l11-7z</StreamGeometry>
   <StreamGeometry x:Key="IconStop">M6 6h12v12H6z</StreamGeometry>
   <StreamGeometry x:Key="IconFile">M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V9h5.5z</StreamGeometry>
+  <StreamGeometry x:Key="IconHeart">M12 21.4l-1.5-1.3C5.4 15.4 2 12.3 2 8.5C2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3C19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.5 11.5z</StreamGeometry>
+  <StreamGeometry x:Key="IconDocument">M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V9h5.5zM8 13v2h8v-2zm0 4v2h5v-2z</StreamGeometry>
+  <StreamGeometry x:Key="IconCopy">M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z</StreamGeometry>
+  <StreamGeometry x:Key="IconBug">M20 8h-2.8a6 6 0 0 0-1.8-2l1.6-1.6L15.6 3l-2.2 2.2a6 6 0 0 0-2.8 0L8.4 3L7 4.4L8.6 6a6 6 0 0 0-1.8 2H4v2h2.1a6 6 0 0 0-.1 1v1H4v2h2v1a6 6 0 0 0 .1 1H4v2h2.8a6 6 0 0 0 10.4 0H20v-2h-2.1a6 6 0 0 0 .1-1v-1h2v-2h-2v-1a6 6 0 0 0-.1-1H20zm-6 8h-4v-2h4zm0-4h-4v-2h4z</StreamGeometry>
+  <StreamGeometry x:Key="IconConvert">M6.99 11L3 15l3.99 4v-3H14v-2H6.99zM21 9l-3.99-4v3H10v2h7.01v3z</StreamGeometry>
   <StreamGeometry x:Key="IconBroom">M19.4 3.2l1.4 1.4l-5.9 5.9l1.1 1.1c.8.8.8 2 0 2.8l-.7.7l-6.4-6.4l.7-.7c.8-.8 2-.8 2.8 0l1.1 1.1zM8.2 9.4l6.4 6.4l-4.9 4.9c-.6.6-1.4.9-2.2.9H3l2.6-2.6L4.2 17.6L3 18.8V14z</StreamGeometry>
   <StreamGeometry x:Key="IconDownload">M11 3h2v9.6l3.3-3.3l1.4 1.4L12 16.4l-5.7-5.7l1.4-1.4l3.3 3.3zM4 18h16v2H4z</StreamGeometry>
 </ResourceDictionary>

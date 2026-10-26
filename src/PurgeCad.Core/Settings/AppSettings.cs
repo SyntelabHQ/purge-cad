@@ -36,7 +36,44 @@ public sealed class AppSettings
     public bool IncludeDwg { get; set; } = true;
     public bool IncludeDxf { get; set; } = true;
 
+    /// <summary>Folders used lately, newest first (at most <see cref="MaxRecentFolders"/>).</summary>
+    public List<string> RecentFolders { get; set; } = new();
+
+    public const int MaxRecentFolders = 8;
+
+    /// <summary>Puts a folder first in <see cref="RecentFolders"/>.</summary>
+    public void RememberFolder(string folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder)) return;
+        var path = Path.TrimEndingDirectorySeparator(folder);
+        RecentFolders.RemoveAll(f => string.Equals(Path.TrimEndingDirectorySeparator(f), path,
+            OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase));
+        RecentFolders.Insert(0, path);
+        if (RecentFolders.Count > MaxRecentFolders) RecentFolders.RemoveRange(MaxRecentFolders, RecentFolders.Count - MaxRecentFolders);
+    }
+
+    /// <summary>Named sets of options, applied with one click (and by name on the command line).</summary>
+    public List<OptionProfile> Profiles { get; set; } = new();
+
+    public OptionProfile? FindProfile(string name) =>
+        Profiles.FirstOrDefault(p => string.Equals(p.Name, name.Trim(), StringComparison.CurrentCultureIgnoreCase));
+
+    /// <summary>Saves the current options under a name, replacing a profile with the same name.</summary>
+    public OptionProfile SaveProfile(string name)
+    {
+        var profile = OptionProfile.From(name.Trim(), this);
+        var index = Profiles.FindIndex(p => string.Equals(p.Name, profile.Name, StringComparison.CurrentCultureIgnoreCase));
+        if (index >= 0) Profiles[index] = profile; else Profiles.Add(profile);
+        return profile;
+    }
+
     public BatchSettings Batch { get; set; } = new();
+
+    /// <summary>Messages (news.json) the user closed in the main window.</summary>
+    public List<string> DismissedNews { get; set; } = new();
+
+    /// <summary>The Convert tab's version (AC1027 = 2013 until the user picks one).</summary>
+    public string ConvertVersion { get; set; } = "AC1027";
     public AuxiliaryCleanupOptions Cleanup { get; set; } = new();
 
     /// <summary>Look for a newer version on start-up (GitHub releases).</summary>
@@ -47,6 +84,46 @@ public sealed class AppSettings
 
     /// <summary>accoreconsole.exe chosen by hand; null = find automatically.</summary>
     public string? AutoCadConsolePath { get; set; }
+}
+
+/// <summary>A saved set of options: engine, where to save, what to purge, version, files at the same time.</summary>
+public sealed class OptionProfile
+{
+    public string Name { get; set; } = "";
+    public string EngineId { get; set; } = Purging.EngineRegistry.AutomaticId;
+    public OutputMode Mode { get; set; } = OutputMode.CopyToFolder;
+    public string? OutputFolder { get; set; }
+    public int Parallelism { get; set; } = 2;
+    public Purging.PurgeOptions Purge { get; set; } = new();
+    public bool IncludeSubfolders { get; set; } = true;
+    public bool IncludeDwg { get; set; } = true;
+    public bool IncludeDxf { get; set; } = true;
+
+    public static OptionProfile From(string name, AppSettings s) => new()
+    {
+        Name = name,
+        EngineId = s.Batch.EngineId,
+        Mode = s.Batch.Mode,
+        OutputFolder = s.Batch.OutputFolder,
+        Parallelism = s.Batch.Parallelism,
+        Purge = s.Batch.Purge.Clone(),
+        IncludeSubfolders = s.IncludeSubfolders,
+        IncludeDwg = s.IncludeDwg,
+        IncludeDxf = s.IncludeDxf,
+    };
+
+    /// <summary>Copies the profile into the settings (the options a run uses).</summary>
+    public void ApplyTo(AppSettings s)
+    {
+        s.Batch.EngineId = EngineId;
+        s.Batch.Mode = Mode;
+        if (!string.IsNullOrWhiteSpace(OutputFolder)) s.Batch.OutputFolder = OutputFolder;
+        s.Batch.Parallelism = Math.Clamp(Parallelism, 1, 4);
+        s.Batch.Purge = Purge.Clone();
+        s.IncludeSubfolders = IncludeSubfolders;
+        s.IncludeDwg = IncludeDwg;
+        s.IncludeDxf = IncludeDxf;
+    }
 }
 
 public static class SettingsStore

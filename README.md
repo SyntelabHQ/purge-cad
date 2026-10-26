@@ -111,6 +111,18 @@
       <p>The folder is counted as soon as you pick it, up to four drawings are purged at a time, and the list of results stays quick with tens of thousands of files. Stop at any moment: the file in progress is never left half-written.</p>
     </td>
   </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🔁 Save in another version</h3>
+      <p><b>One drawing, a few, or a whole folder.</b></p>
+      <p>Save as DWG / DXF 2018, 2013, 2010, 2007, 2004 or 2000, with or without a purge. Tick only the files to convert. In <b>Automatic</b>, a file AutoCAD cannot open is tried with ACadSharp, and xrefs, images and PDFs whose file is gone can be detached.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🖱️ Right-click, profiles, command line</h3>
+      <p><b>Start where you already are.</b></p>
+      <p>Right-click a folder or DWG / DXF files in Windows Explorer. Save your options as profiles and reopen recent folders with one click. Run it from scripts: <code>PurgeCAD.exe --run "D:\Projects" --mode copy --out "D:\Purged" --save-as 2013</code> (<code>--help</code> lists every option).</p>
+    </td>
+  </tr>
 </table>
 
 ## ✨ Why PurgeCAD

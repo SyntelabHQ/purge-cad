@@ -30,8 +30,8 @@ public static class CsvReport
                 f.SizeBefore.ToString(CultureInfo.InvariantCulture),
                 f.SizeAfter?.ToString(CultureInfo.InvariantCulture),
                 removed,
-                f.EngineId,
-                f.Version,
+                f.FallbackFrom is null ? f.EngineId : $"{f.EngineId} ({f.FallbackFrom} → {f.EngineId})",
+                f.SavedAs is null ? f.Version : $"{f.Version} → {f.SavedAs}",
                 f.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture),
                 f.Detail);
         }

@@ -45,6 +45,23 @@ public class AutoCadScriptTests
     public void Newest_format_per_release(string release, string expected) =>
         Assert.Equal(expected, AutoCadScript.NewestFormat(release));
 
+    [Theory]
+    [InlineData("AC1027", 19, "2013")]
+    [InlineData("AC1012", 19, "2000")]
+    [InlineData("AC1009", 24, "2000")]
+    [InlineData(null, 19, "2013")]
+    [InlineData("AC9999", 24, "2018")]
+    [InlineData(null, 18, "2010")]
+    public void Save_format_fits_the_drawing_and_the_release(string? version, int major, string expected) =>
+        Assert.Equal(expected, AutoCadScript.SaveFormat(version, major));
+
+    [Theory]
+    [InlineData("AutoCAD MessageDrawing file is not valid.\r\n>>>Responding: OK.", true)]
+    [InlineData("Invalid or incomplete DXF input -- drawing discarded.", true)]
+    [InlineData("PurgeCAD: done, 385 items removed in 5 passes.\r\nNo unreferenced blocks found.", false)]
+    public void Open_failure_is_recognised(string log, bool expected) =>
+        Assert.Equal(expected, AutoCadScript.IsOpenFailure(log));
+
     [Fact]
     public void Log_counts_are_read_per_category()
     {

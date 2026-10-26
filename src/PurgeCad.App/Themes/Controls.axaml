@@ -2,9 +2,9 @@
   Component styles built only from tokens (Tokens.axaml). Views compose these through classes:
     Text:     brand, title, subtitle, section, secondary, caption, mono, stat
     Surfaces: Border.titleBar, Border.sidebar, Border.card, Border.tile, Border.stat, Border.notice, Border.appMark, Border.iconTile
-    Pills:    Border.segmented + RadioButton.segment, ToggleButton.chip, Border.badge, Border.status
+    Pills:    Border.segmented + RadioButton.segment (.tab: main tabs), ToggleButton.chip, Border.badge, Border.status
     Choices:  RadioButton.tile (selectable card with a dot)
-    Buttons:  Button (default), Button.primary, Button.large, Button.icon, Button.ghost, Button.row
+    Buttons:  Button (default), Button.link, Button.primary, Button.large, Button.icon, Button.ghost, Button.row
     Layout:   GridSplitter.panel
   Note: in Avalonia the later style wins when two match, so icon colours that override others come last.
 -->
@@ -99,6 +99,9 @@
   <Style Selector="Border.notice.info">
     <Setter Property="Background" Value="{DynamicResource InfoSubtle}" />
   </Style>
+  <Style Selector="Border.notice.success">
+    <Setter Property="Background" Value="{DynamicResource SuccessSubtle}" />
+  </Style>
   <Style Selector="Border.notice TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
   </Style>
@@ -180,6 +183,12 @@
     <Setter Property="BoxShadow" Value="{StaticResource ShadowRaised}" />
   </Style>
 
+  <!-- Main tabs (Purge / Cleanup / Convert): the active one in the brand brown -->
+  <Style Selector="RadioButton.segment.tab:checked">
+    <Setter Property="Background" Value="{DynamicResource Brand}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnBrand}" />
+  </Style>
+
   <!-- ===== Selectable tile (engine, output mode) ===== -->
   <Style Selector="RadioButton.tile">
     <Setter Property="Background" Value="{DynamicResource Surface}" />
@@ -230,7 +239,7 @@
   </Style>
 
   <!-- ===== Chips (on/off filters) ===== -->
-  <Style Selector="ToggleButton.chip">
+  <Style Selector="ToggleButton.chip, Button.chip">
     <Setter Property="Background" Value="{DynamicResource Surface}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Border}" />
     <Setter Property="BorderThickness" Value="{StaticResource BorderThin}" />
@@ -256,9 +265,22 @@
       </ControlTemplate>
     </Setter>
   </Style>
-  <Style Selector="ToggleButton.chip:pointerover">
+  <Style Selector="ToggleButton.chip:pointerover, Button.chip:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
     <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <!-- icon-only chip (Rescan): square-ish padding, the icon as tall as a chip's text line -->
+  <Style Selector="Button.chip.iconOnly">
+    <Setter Property="Padding" Value="{StaticResource PaddingChipIcon}" />
+  </Style>
+  <Style Selector="Button.chip.iconOnly PathIcon">
+    <Setter Property="Width" Value="{StaticResource IconSizeSmall}" />
+    <Setter Property="Height" Value="{StaticResource IconSizeLarge}" />
+  </Style>
+  <!-- a button that holds a filter, while the filter is on (size) -->
+  <Style Selector="Button.active">
+    <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrong}" />
   </Style>
   <Style Selector="ToggleButton.chip:checked">
     <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
@@ -381,6 +403,31 @@
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
     <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+
+  <!-- Text link ("Show log", "Read more"): brand colour, underlined on hover -->
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource Brand}" />
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Brand}" />
+  </Style>
+  <Style Selector="Button.link:pointerover TextBlock">
+    <Setter Property="TextDecorations" Value="Underline" />
+  </Style>
+  <Style Selector="Button.link PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brand}" />
+    <Setter Property="Width" Value="{StaticResource IconSizeXSmall}" />
+    <Setter Property="Height" Value="{StaticResource IconSizeXSmall}" />
   </Style>
 
   <!-- Full-width list row button (About links) -->
@@ -519,6 +566,9 @@
   </Style>
   <Style Selector="Border.notice PathIcon">
     <Setter Property="Foreground" Value="{DynamicResource Warning}" />
+  </Style>
+  <Style Selector="Border.notice.success PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Success}" />
   </Style>
   <Style Selector="Border.notice.info PathIcon">
     <Setter Property="Foreground" Value="{DynamicResource Info}" />

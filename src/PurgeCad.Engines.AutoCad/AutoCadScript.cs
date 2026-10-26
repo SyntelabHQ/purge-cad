@@ -104,7 +104,8 @@ public static class AutoCadScript
     ];
 
     public static IReadOnlySet<PurgeCategory> Supported { get; } = PurgeOptions.Select(p => p.Category)
-        .Concat([PurgeCategory.DgnLinetypeComponents, PurgeCategory.LayerFilters, PurgeCategory.AnnotationScales])
+        .Concat([PurgeCategory.DgnLinetypeComponents, PurgeCategory.LayerFilters, PurgeCategory.AnnotationScales,
+                 PurgeCategory.MissingReferences]) // the plugin only
         .ToHashSet();
 
     /// <summary>Major release number from "R19.1" (99 when unknown, meaning "recent").</summary>
@@ -183,12 +184,19 @@ public static class AutoCadScript
     /// <summary>The plugin writes this line to the counts file when its command ran.</summary>
     public const string PluginRanMarker = "PURGECAD plugin 1";
 
-    /// <summary>Job file for the plugin: where to write the counts, and the categories to purge.</summary>
-    public static string BuildJob(PurgeOptions options, string countsPath) =>
-        $"counts={countsPath}\ncategories={string.Join(",", options.Categories.Order().Select(c => c.ToString()))}\n";
+    /// <summary>
+    /// Job file for the plugin: where to write the counts, the categories to purge, and the original drawing's path
+    /// (AutoCAD opens a copy in a work folder; references with relative paths are looked for next to the original).
+    /// </summary>
+    public static string BuildJob(PurgeOptions options, string countsPath, string? sourcePath = null) =>
+        $"counts={countsPath}\ncategories={string.Join(",", options.Categories.Order().Select(c => c.ToString()))}\n"
+        + (sourcePath is null ? "" : $"source={sourcePath}\n");
 
-    /// <summary>The -SAVEAS format keyword for a version code ("AC1027" → "2013").</summary>
-    public static string SaveFormat(string? versionCode) => versionCode switch
+    /// <summary>
+    /// The -SAVEAS format keyword for a version code ("AC1027" → "2013"). Drawings older than R14 are saved as 2000;
+    /// an unknown code is saved in the newest format the AutoCAD release offers.
+    /// </summary>
+    public static string SaveFormat(string? versionCode, int releaseMajor = 99) => versionCode switch
     {
         "AC1014" => "R14",
         "AC1015" => "2000",
@@ -197,7 +205,15 @@ public static class AutoCadScript
         "AC1024" => "2010",
         "AC1027" => "2013",
         "AC1032" => "2018",
-        _ => "2018",
+        _ when versionCode is not null && string.CompareOrdinal(versionCode, "AC1014") < 0 => "2000",
+        _ => releaseMajor switch
+        {
+            >= 22 => "2018",
+            >= 19 => "2013",
+            18 => "2010",
+            17 => "2007",
+            _ => "2004",
+        },
     };
 
     /// <summary>Newest drawing format an AutoCAD release can open ("R24.3" → "AC1032").</summary>
@@ -270,6 +286,21 @@ public static class AutoCadScript
         if (w.Contains("text")) return PurgeCategory.EmptyTexts;
         return null;
     }
+
+    /// <summary>
+    /// What AutoCAD prints when it cannot open the input (damaged file, or written by a program AutoCAD does not
+    /// accept). The console then goes on with an empty drawing, so the run must stop: saving it would give an empty file.
+    /// </summary>
+    static readonly string[] OpenFailureMarkers =
+    [
+        "Drawing file is not valid",
+        "Invalid or incomplete DXF input",
+        "drawing discarded",
+        "is not a valid drawing",
+    ];
+
+    public static bool IsOpenFailure(string log) =>
+        OpenFailureMarkers.Any(m => log.Contains(m, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// True when AutoCAD did not get as far as running the script: a licensing error (adlm / licence) or a console

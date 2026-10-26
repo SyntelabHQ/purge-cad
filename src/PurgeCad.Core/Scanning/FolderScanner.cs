@@ -73,6 +73,51 @@ public static class FolderScanner
         return result;
     }
 
+    /// <summary>
+    /// A "scan" of chosen files only (from the Explorer menu or the command line): the drawings among them, with
+    /// paths relative to the folder they share, and the lock / backup / autosave files that belong to them.
+    /// </summary>
+    public static ScanResult FromFiles(IEnumerable<string> files)
+    {
+        var drawings = files.Select(Path.GetFullPath)
+            .Where(f => AuxiliaryRules.DrawingKindOf(f) is not null && File.Exists(f))
+            .Distinct(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
+            .ToList();
+        var root = CommonFolder(drawings);
+        var result = new ScanResult { Root = root };
+        var options = new ScanOptions(root);
+        foreach (var file in drawings)
+        {
+            Classify(file, root, options, result);
+            var folder = Path.GetDirectoryName(file)!;
+            var name = Path.GetFileNameWithoutExtension(file);
+            foreach (var ext in new[] { ".dwl", ".dwl2", ".bak", ".sv$" })
+            {
+                var aux = Path.Combine(folder, name + ext);
+                if (File.Exists(aux)) Classify(aux, root, options, result);
+            }
+        }
+        result.Drawings.Sort((a, b) => string.Compare(a.RelativePath, b.RelativePath, StringComparison.CurrentCultureIgnoreCase));
+        return result;
+    }
+
+    /// <summary>The deepest folder that holds all the files ("" for none).</summary>
+    public static string CommonFolder(IReadOnlyList<string> files)
+    {
+        if (files.Count == 0) return "";
+        var common = Path.GetDirectoryName(files[0])!;
+        foreach (var file in files.Skip(1))
+            while (!IsUnder(file, common) && Path.GetDirectoryName(common) is { } parent)
+                common = parent;
+        return common;
+    }
+
+    static bool IsUnder(string file, string folder)
+    {
+        var relative = Path.GetRelativePath(folder, file);
+        return !relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative);
+    }
+
     static void Classify(string file, string root, ScanOptions options, ScanResult result)
     {
         var relative = Path.GetRelativePath(root, file);

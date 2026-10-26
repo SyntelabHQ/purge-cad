@@ -47,8 +47,14 @@ public sealed class FileReport
     public bool SizeAfterIsEstimate { get; set; }
     public Dictionary<PurgeCategory, int> Removed { get; set; } = new();
     public string? EngineId { get; set; }
+    /// <summary>The engine that could not do this file before <see cref="EngineId"/> took over (Automatic only).</summary>
+    public string? FallbackFrom { get; set; }
     public string? Version { get; set; }
+    /// <summary>Version code the file was saved in, when it was converted.</summary>
+    public string? SavedAs { get; set; }
     public TimeSpan Duration { get; set; }
+    /// <summary>The engine's log for this file from this run ("Show log"); null when the engine wrote none.</summary>
+    public string? LogPath { get; set; }
     /// <summary>Where the result was written (output copy or the original in place); null for dry-run or skip.</summary>
     public string? OutputPath { get; set; }
 }

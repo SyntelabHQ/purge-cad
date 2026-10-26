@@ -11,12 +11,15 @@ namespace PurgeCad.AutoCad.Plugin
     /// <code>
     /// counts=C:\...\counts.txt
     /// categories=Blocks,Layers,Linetypes,...
+    /// source=C:\...\original.dwg
     /// </code>
     /// Category names are PurgeCAD's own (PurgeCad.Core PurgeCategory). Without a job file nothing is purged.
     /// </summary>
     sealed class Job
     {
         public string CountsPath { get; private set; }
+        /// <summary>The original drawing (AutoCAD has a copy open); relative reference paths start from its folder.</summary>
+        public string SourcePath { get; private set; }
         public HashSet<string> Categories { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public bool Has(string category) => Categories.Contains(category);
@@ -32,6 +35,7 @@ namespace PurgeCad.AutoCad.Plugin
                 var key = line.Substring(0, eq).Trim();
                 var value = line.Substring(eq + 1).Trim();
                 if (key == "counts") job.CountsPath = value;
+                else if (key == "source") job.SourcePath = value;
                 else if (key == "categories")
                     foreach (var c in value.Split(',').Select(c => c.Trim()).Where(c => c.Length > 0))
                         job.Categories.Add(c);

@@ -1,5 +1,6 @@
 <!--
-  About: name, publisher, links, credits, license, notices.
+  About: four tabs. About (name, links, updates, credits, license), What's new (release notes from GitHub),
+  Messages (news.json) and Help (report a problem, logs, system info). The window can be resized.
   Modified versions (forks) must add the attribution notice from Brand.AttributionNotice here
   ("Based on PurgeCAD by Syntelab …"), as required by ADDITIONAL-TERMS.md. The original app does not show it.
 -->
@@ -10,12 +11,14 @@
         xmlns:v="using:PurgeCad.App.Views"
         x:Class="PurgeCad.App.Views.AboutWindow"
         Icon="/Assets/purge-cad.ico"
-        Width="{StaticResource AboutWidth}" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner"
+        Width="{StaticResource AboutWidth}" Height="{StaticResource AboutHeight}"
+        MinWidth="{StaticResource AboutMinWidth}" MinHeight="{StaticResource AboutMinHeight}"
+        CanResize="True" WindowStartupLocation="CenterOwner"
         Title="{Binding [about.title], Source={x:Static s:Loc.Instance}}"
         FlowDirection="{Binding Language.RightToLeft, Source={x:Static s:Loc.Instance}, Converter={x:Static s:Converters.FlowDirection}}">
-  <StackPanel Margin="{StaticResource AboutInset}" Spacing="{StaticResource Space4}">
+  <DockPanel Margin="{StaticResource AboutInset}">
     <!-- Identity -->
-    <Grid ColumnDefinitions="Auto,*">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="{StaticResource GapBelowLg}">
       <Border Classes="appMark" Width="{StaticResource AppMarkSizeDialog}" Height="{StaticResource AppMarkSizeDialog}"
               CornerRadius="{StaticResource RadiusAppMarkDialog}">
         <PathIcon Data="{StaticResource IconPurgeCad}" Width="{StaticResource IconSizeDialog}" Height="{StaticResource IconSizeDialog}" />
@@ -29,92 +32,238 @@
         </StackPanel>
       </StackPanel>
     </Grid>
-    <TextBlock Classes="secondary" Text="{Binding [app.tagline], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
 
-    <!-- Links: 2 × 2 -->
-    <ItemsControl x:Name="Links">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="v:AboutLink">
-          <Button Classes="row" Command="{Binding OpenCommand}" ToolTip.Tip="{Binding Url}" Margin="{StaticResource LinkCellMargin}">
-            <Grid ColumnDefinitions="Auto,*">
-              <Border Classes="iconTile" Width="{StaticResource IconTileSizeSmall}" Height="{StaticResource IconTileSizeSmall}" Margin="{StaticResource GapEnd}">
-                <PathIcon Data="{Binding Icon}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
-              </Border>
-              <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Medium" VerticalAlignment="Center"
-                         TextTrimming="CharacterEllipsis" />
-            </Grid>
-          </Button>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-
-    <!-- AutoCAD engine logs, to see what happened to a file -->
-    <Button Classes="row" x:Name="LogsButton" Margin="{StaticResource PullUp}">
-      <Grid ColumnDefinitions="Auto,*">
-        <Border Classes="iconTile" Width="{StaticResource IconTileSizeSmall}" Height="{StaticResource IconTileSizeSmall}" Margin="{StaticResource GapEnd}">
-          <PathIcon Data="{StaticResource IconFolder}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
-        </Border>
-        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-          <TextBlock Text="{Binding [about.logs], Source={x:Static s:Loc.Instance}}" FontWeight="Medium" />
-          <TextBlock Classes="caption" x:Name="LogsPath" TextTrimming="PathSegmentEllipsis" />
-        </StackPanel>
-      </Grid>
-    </Button>
-
-    <!-- Updates -->
-    <Border Classes="tile">
-      <StackPanel Spacing="{StaticResource SpaceInline}">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock x:Name="UpdateStatus" TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEnd}" />
-          <Button Grid.Column="1" x:Name="CheckUpdatesButton"
-                  Content="{Binding [update.checkNow], Source={x:Static s:Loc.Instance}}" />
-        </Grid>
-        <Button Classes="primary" x:Name="DownloadButton" IsVisible="False" HorizontalAlignment="Left"
-                Content="{Binding [update.download], Source={x:Static s:Loc.Instance}}" />
-        <CheckBox x:Name="AutoCheck" Content="{Binding [update.auto], Source={x:Static s:Loc.Instance}}" />
-      </StackPanel>
+    <!-- Tabs -->
+    <Border DockPanel.Dock="Top" Classes="segmented" Margin="{StaticResource GapBelowLg}">
+      <UniformGrid Rows="1">
+        <RadioButton x:Name="TabAbout" Classes="segment tab" GroupName="about" IsChecked="True" Padding="{StaticResource PaddingSegmentCompact}"
+                     Content="{Binding [about.tab.about], Source={x:Static s:Loc.Instance}}" />
+        <RadioButton x:Name="TabNew" Classes="segment tab" GroupName="about" Padding="{StaticResource PaddingSegmentCompact}"
+                     Content="{Binding [about.tab.whatsNew], Source={x:Static s:Loc.Instance}}" />
+        <RadioButton x:Name="TabNews" Classes="segment tab" GroupName="about" Padding="{StaticResource PaddingSegmentCompact}">
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+            <TextBlock Text="{Binding [about.tab.messages], Source={x:Static s:Loc.Instance}}" />
+            <Border Classes="badge" x:Name="NewsCountBadge" IsVisible="False" VerticalAlignment="Center">
+              <TextBlock x:Name="NewsCount" FontSize="{DynamicResource FontSizeSmall}" />
+            </Border>
+          </StackPanel>
+        </RadioButton>
+        <RadioButton x:Name="TabHelp" Classes="segment tab" GroupName="about" Padding="{StaticResource PaddingSegmentCompact}"
+                     Content="{Binding [about.tab.help], Source={x:Static s:Loc.Instance}}" />
+      </UniformGrid>
     </Border>
 
-    <!-- Credits -->
-    <Border Classes="tile">
-      <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
-        <Grid.Styles>
-          <Style Selector="TextBlock">
-            <Setter Property="Margin" Value="{StaticResource CreditValueMargin}" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
-          </Style>
-          <Style Selector="TextBlock.caption">
-            <Setter Property="Margin" Value="{StaticResource CreditLabelMargin}" />
-          </Style>
-        </Grid.Styles>
-        <TextBlock Classes="caption" Text="{Binding [about.label.license], Source={x:Static s:Loc.Instance}}" />
-        <TextBlock Grid.Column="1" Text="{Binding [about.value.license], Source={x:Static s:Loc.Instance}}" />
-        <TextBlock Grid.Row="1" Classes="caption" Text="{Binding [about.label.icon], Source={x:Static s:Loc.Instance}}" />
-        <TextBlock Grid.Row="1" Grid.Column="1" Text="Font Awesome Free (CC BY 4.0)" />
-        <TextBlock Grid.Row="2" Classes="caption" Text="{Binding [about.label.fonts], Source={x:Static s:Loc.Instance}}" />
-        <TextBlock Grid.Row="2" Grid.Column="1" Text="Sansation, Noto Sans (SIL OFL 1.1)" />
-        <TextBlock Grid.Row="3" Classes="caption" Text="{Binding [about.label.libraries], Source={x:Static s:Loc.Instance}}" />
-        <TextBlock Grid.Row="3" Grid.Column="1" Text="Avalonia, ACadSharp, CommunityToolkit.Mvvm, Velopack (MIT)" />
-      </Grid>
-    </Border>
-
-    <Border Classes="notice">
-      <Grid ColumnDefinitions="Auto,*">
-        <PathIcon Data="{StaticResource IconWarning}" Margin="{StaticResource IconLead}" VerticalAlignment="Top" />
-        <TextBlock Grid.Column="1" Classes="caption" TextWrapping="Wrap"
-                   Text="{Binding [about.noWarranty], Source={x:Static s:Loc.Instance}}" />
-      </Grid>
-    </Border>
-
-    <Grid ColumnDefinitions="*,Auto">
+    <!-- Close -->
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="{StaticResource GapTopLg}">
       <TextBlock Classes="caption" TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEndLg}"
                  Text="{Binding [about.autodesk], Source={x:Static s:Loc.Instance}}" />
       <Button Grid.Column="1" x:Name="CloseButton" MinWidth="{StaticResource CloseButtonMinWidth}" HorizontalContentAlignment="Center" VerticalAlignment="Bottom"
               Content="{Binding [common.close], Source={x:Static s:Loc.Instance}}" />
     </Grid>
-  </StackPanel>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <Panel>
+        <!-- ===== About ===== -->
+        <StackPanel Spacing="{StaticResource Space4}" IsVisible="{Binding #TabAbout.IsChecked}">
+          <TextBlock Classes="secondary" Text="{Binding [app.tagline], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
+
+          <!-- Open source: help by talking about us first, then support (link to the support page in the user's language) -->
+          <Border Classes="notice success">
+            <Grid ColumnDefinitions="Auto,*">
+              <PathIcon Data="{StaticResource IconHeart}" Margin="{StaticResource IconLead}" VerticalAlignment="Top" />
+              <StackPanel Grid.Column="1" Spacing="{StaticResource SpaceInline}">
+                <TextBlock Text="{Binding [support.title], Source={x:Static s:Loc.Instance}}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Classes="caption" Text="{Binding [support.share], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
+                <TextBlock Classes="caption" TextWrapping="Wrap">
+                  <Run Text="{Binding [support.money], Source={x:Static s:Loc.Instance}}" />
+                  <InlineUIContainer BaselineAlignment="TextBottom">
+                    <Button Classes="link" x:Name="SupportLink" Content="{Binding [support.link], Source={x:Static s:Loc.Instance}}" />
+                  </InlineUIContainer>
+                </TextBlock>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <ItemsControl x:Name="Links">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="v:AboutLink">
+                <Button Classes="row" Command="{Binding OpenCommand}" ToolTip.Tip="{Binding Url}" Margin="{StaticResource LinkCellMargin}">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <Border Classes="iconTile" Width="{StaticResource IconTileSizeSmall}" Height="{StaticResource IconTileSizeSmall}" Margin="{StaticResource GapEnd}">
+                      <PathIcon Data="{Binding Icon}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
+                    </Border>
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Medium" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Updates -->
+          <Border Classes="tile">
+            <StackPanel Spacing="{StaticResource SpaceInline}">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="UpdateStatus" TextWrapping="Wrap" VerticalAlignment="Center" Margin="{StaticResource GapEnd}" />
+                <Button Grid.Column="1" x:Name="CheckUpdatesButton"
+                        Content="{Binding [update.checkNow], Source={x:Static s:Loc.Instance}}" />
+              </Grid>
+              <Button Classes="primary" x:Name="DownloadButton" IsVisible="False" HorizontalAlignment="Left"
+                      Content="{Binding [update.download], Source={x:Static s:Loc.Instance}}" />
+              <CheckBox x:Name="AutoCheck" Content="{Binding [update.auto], Source={x:Static s:Loc.Instance}}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Credits -->
+          <Border Classes="tile">
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+              <Grid.Styles>
+                <Style Selector="TextBlock">
+                  <Setter Property="Margin" Value="{StaticResource CreditValueMargin}" />
+                  <Setter Property="TextWrapping" Value="Wrap" />
+                  <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+                </Style>
+                <Style Selector="TextBlock.caption">
+                  <Setter Property="Margin" Value="{StaticResource CreditLabelMargin}" />
+                </Style>
+              </Grid.Styles>
+              <TextBlock Classes="caption" Text="{Binding [about.label.license], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Column="1" Text="{Binding [about.value.license], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Row="1" Classes="caption" Text="{Binding [about.label.icon], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Text="Font Awesome Free (CC BY 4.0)" />
+              <TextBlock Grid.Row="2" Classes="caption" Text="{Binding [about.label.fonts], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Row="2" Grid.Column="1" Text="Sansation, Noto Sans (SIL OFL 1.1)" />
+              <TextBlock Grid.Row="3" Classes="caption" Text="{Binding [about.label.libraries], Source={x:Static s:Loc.Instance}}" />
+              <TextBlock Grid.Row="3" Grid.Column="1" Text="Avalonia, ACadSharp, CommunityToolkit.Mvvm, Velopack (MIT)" />
+            </Grid>
+          </Border>
+
+          <Border Classes="notice">
+            <Grid ColumnDefinitions="Auto,*">
+              <PathIcon Data="{StaticResource IconWarning}" Margin="{StaticResource IconLead}" VerticalAlignment="Top" />
+              <TextBlock Grid.Column="1" Classes="caption" TextWrapping="Wrap"
+                         Text="{Binding [about.noWarranty], Source={x:Static s:Loc.Instance}}" />
+            </Grid>
+          </Border>
+        </StackPanel>
+
+        <!-- ===== What's new: the last releases ===== -->
+        <StackPanel Spacing="{StaticResource Space3}" IsVisible="{Binding #TabNew.IsChecked}">
+          <TextBlock Classes="caption" x:Name="ReleasesState" TextWrapping="Wrap" />
+          <ItemsControl x:Name="Releases">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="v:AboutRelease">
+                <Border Classes="tile" Margin="{StaticResource GapBelow}">
+                  <StackPanel Spacing="{StaticResource SpaceInline}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                        <TextBlock Text="{Binding Tag}" FontWeight="SemiBold" />
+                        <Border Classes="badge" IsVisible="{Binding IsCurrent}">
+                          <TextBlock Text="{Binding [about.whatsNew.current], Source={x:Static s:Loc.Instance}}" FontSize="{DynamicResource FontSizeSmall}" />
+                        </Border>
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Classes="caption" Text="{Binding DateText}" VerticalAlignment="Center" />
+                    </Grid>
+                    <SelectableTextBlock Classes="secondary" Text="{Binding Notes}" TextWrapping="Wrap" FontSize="{DynamicResource FontSizeSmall}" />
+                    <Button Classes="link" Command="{Binding OpenCommand}" ToolTip.Tip="{Binding Url}">
+                      <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                        <TextBlock Text="{Binding [about.whatsNew.open], Source={x:Static s:Loc.Instance}}" />
+                        <PathIcon Data="{StaticResource IconExternal}" />
+                      </StackPanel>
+                    </Button>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button Classes="link" x:Name="AllReleases">
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+              <TextBlock Text="{Binding [about.whatsNew.all], Source={x:Static s:Loc.Instance}}" />
+              <PathIcon Data="{StaticResource IconExternal}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <!-- ===== Messages (news.json) ===== -->
+        <StackPanel Spacing="{StaticResource Space3}" IsVisible="{Binding #TabNews.IsChecked}">
+          <TextBlock Classes="caption" x:Name="NewsState" TextWrapping="Wrap" />
+          <ItemsControl x:Name="NewsList">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="v:AboutNews">
+                <Border Classes="notice" Classes.info="{Binding !IsWarning}" Margin="{StaticResource GapBelow}">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <PathIcon Data="{StaticResource IconInfo}" Margin="{StaticResource IconLead}" VerticalAlignment="Top" />
+                    <StackPanel Grid.Column="1" Spacing="{StaticResource SpaceHair}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Grid.Column="1" Classes="caption" Text="{Binding DateText}" Margin="{StaticResource GapStartLg}" />
+                      </Grid>
+                      <TextBlock Classes="caption" Text="{Binding Text}" TextWrapping="Wrap" />
+                      <Button Classes="link" Command="{Binding OpenCommand}" IsVisible="{Binding HasLink}" ToolTip.Tip="{Binding Link}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                          <TextBlock Text="{Binding [news.open], Source={x:Static s:Loc.Instance}}" />
+                          <PathIcon Data="{StaticResource IconExternal}" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- ===== Help: report a problem with the drawing's log ===== -->
+        <StackPanel Spacing="{StaticResource Space4}" IsVisible="{Binding #TabHelp.IsChecked}">
+          <Border Classes="tile">
+            <StackPanel Spacing="{StaticResource Space2}">
+              <TextBlock Classes="subtitle" Text="{Binding [help.title], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
+              <TextBlock Classes="secondary" Text="{Binding [help.text], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
+              <TextBlock Classes="caption" Text="{Binding [help.private], Source={x:Static s:Loc.Instance}}" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}" Margin="{StaticResource GapTopSm}">
+                <Button Classes="primary" x:Name="ReportButton" ToolTip.Tip="{Binding [help.report.tip], Source={x:Static s:Loc.Instance}}">
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                    <PathIcon Data="{StaticResource IconBug}" />
+                    <TextBlock Text="{Binding [help.report], Source={x:Static s:Loc.Instance}}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Engine logs: one per drawing, its last run -->
+          <Button Classes="row" x:Name="LogsButton">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Classes="iconTile" Width="{StaticResource IconTileSizeSmall}" Height="{StaticResource IconTileSizeSmall}" Margin="{StaticResource GapEnd}">
+                <PathIcon Data="{StaticResource IconFolder}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding [about.logs], Source={x:Static s:Loc.Instance}}" FontWeight="Medium" />
+                <TextBlock Classes="caption" x:Name="LogsPath" TextTrimming="PathSegmentEllipsis" />
+              </StackPanel>
+            </Grid>
+          </Button>
+
+          <!-- System info, to paste into a report -->
+          <StackPanel Spacing="{StaticResource SpaceInline}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="section" Text="{Binding [help.systemInfo], Source={x:Static s:Loc.Instance}}" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="ghost" x:Name="CopyInfoButton" Padding="{StaticResource PaddingGhostSmall}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceInline}">
+                  <PathIcon Data="{StaticResource IconCopy}" Width="{StaticResource IconSizeSmall}" Height="{StaticResource IconSizeSmall}" />
+                  <TextBlock x:Name="CopyInfoText" Text="{Binding [help.copy], Source={x:Static s:Loc.Instance}}" FontSize="{DynamicResource FontSizeSmall}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+            <Border Classes="stat">
+              <SelectableTextBlock x:Name="SystemInfo" FontFamily="{DynamicResource FontMono}" FontSize="{DynamicResource FontSizeSmall}" TextWrapping="Wrap" />
+            </Border>
+          </StackPanel>
+        </StackPanel>
+      </Panel>
+    </ScrollViewer>
+  </DockPanel>
 </Window>

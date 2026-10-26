@@ -41,6 +41,8 @@ public sealed class PurgeOperation(IPurgeEngine engine) : IBatchOperation
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(settings.FileTimeout);
 
+            // logs written from now on belong to this run (file times can be a little coarse)
+            var started = DateTime.UtcNow.AddSeconds(-2);
             FilePurgeResult result;
             try
             {
@@ -53,6 +55,7 @@ public sealed class PurgeOperation(IPurgeEngine engine) : IBatchOperation
             }
 
             Apply(report, result);
+            report.LogPath = EngineLogs.Written(drawing.Path, report.EngineId, started);
 
             if (result.Status is FileStatus.Skipped or FileStatus.Failed)
                 return;
@@ -102,8 +105,11 @@ public sealed class PurgeOperation(IPurgeEngine engine) : IBatchOperation
         return null;
     }
 
-    static void Apply(FileReport report, FilePurgeResult result)
+    void Apply(FileReport report, FilePurgeResult result)
     {
+        report.EngineId = result.EngineId ?? engine.Id;
+        report.FallbackFrom = result.FallbackFrom;
+        report.SavedAs = result.SavedAs;
         report.Status = result.Status;
         report.ReasonKey = result.ReasonKey;
         report.Detail = result.Detail;

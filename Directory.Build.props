@@ -8,7 +8,7 @@
     <Company>Syntelab</Company>
     <Product>PurgeCAD</Product>
     <Copyright>Copyright (C) 2026 Syntelab</Copyright>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/SyntelabHQ/purge-cad</RepositoryUrl>
   </PropertyGroup>

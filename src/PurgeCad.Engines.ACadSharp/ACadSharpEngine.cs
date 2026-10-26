@@ -44,7 +44,13 @@ public sealed class ACadSharpEngine : IPurgeEngine
     public EngineAvailability CheckAvailability() => EngineAvailability.Available;
 
     public Task<FilePurgeResult> PurgeAsync(FilePurgeRequest request, CancellationToken cancellationToken) =>
-        Task.Run(() => Purge(request, cancellationToken), cancellationToken);
+        Task.Run(() =>
+        {
+            var diagnostics = new PurgeDiagnostics();
+            var result = Purge(request, cancellationToken, diagnostics);
+            ACadSharpLog.Write(request, diagnostics, result);
+            return result;
+        }, cancellationToken);
 
     /// <summary>Full result with diagnostics, used by the proof tool.</summary>
     public PurgeDiagnostics PurgeWithDiagnostics(FilePurgeRequest request, CancellationToken cancellationToken = default)
@@ -75,6 +81,9 @@ public sealed class ACadSharpEngine : IPurgeEngine
         var version = doc.Header.Version;
         diag.Version = version.ToString();
         ct.ThrowIfCancellationRequested();
+        // Convert tab, drawing already in that version: nothing to write
+        if (request.Options.NothingToDo(diag.Version))
+            return new FilePurgeResult { Status = FileStatus.NothingToPurge, Version = diag.Version };
 
         // 2. Safety pre-checks
         diag.UnknownEntities = CountUnknownEntities(doc);
@@ -84,7 +93,13 @@ public sealed class ACadSharpEngine : IPurgeEngine
         if ((diag.UnknownEntities > 0 || diag.UnsupportedNotices > 0) && !request.Options.AllowUnknownObjects)
             return Skip("skip.unknownObjects", $"{diag.UnknownEntities} unknown entities, {diag.UnsupportedNotices} reader notices");
 
-        if (!isDxf && version == ACadVersion.AC1021 && !request.Options.Upgrade2007To2010)
+        // Save in another version when asked. ACadSharp cannot write DWG 2007 (AC1021).
+        ACadVersion? target = request.Options.SaveVersion is { } wanted && Enum.TryParse<ACadVersion>(wanted, out var t) && t != version
+            ? t : null;
+        if (!isDxf && target == ACadVersion.AC1021)
+            return Skip("engine.acadsharp.saveVersion2007");
+
+        if (!isDxf && version == ACadVersion.AC1021 && target is null && !request.Options.Upgrade2007To2010)
             return Skip("skip.dwg2007");
 
         // 3. Purge, repeated until nothing more goes (nested blocks free their layers / styles on the next pass)
@@ -108,15 +123,20 @@ public sealed class ACadSharpEngine : IPurgeEngine
         }
         diag.PurgeMs = watch.ElapsedMilliseconds - diag.ReadMs;
 
+        diag.Before = before;
         var total = removed.Values.Sum();
-        if (total == 0)
+        var savedAs = target?.ToString();
+        diag.SavedAs = savedAs;
+        // converted to another version: written even when nothing was purged
+        if (total == 0 && target is null)
             return new FilePurgeResult { Status = FileStatus.NothingToPurge, Removed = removed, Version = diag.Version };
 
         if (request.DryRun)
-            return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = diag.Version };
+            return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = diag.Version, SavedAs = savedAs };
 
-        // 4. Write in the original version (2007 → 2010 only when allowed), then verify by reading it back
-        if (!isDxf && version == ACadVersion.AC1021) doc.Header.Version = ACadVersion.AC1024;
+        // 4. Write in the original version (or the one asked for; 2007 → 2010 only when allowed), then verify by reading it back
+        if (target is { } to) doc.Header.Version = to;
+        else if (!isDxf && version == ACadVersion.AC1021) doc.Header.Version = ACadVersion.AC1024;
         var expected = Snapshot(doc);
         try
         {
@@ -152,7 +172,7 @@ public sealed class ACadSharpEngine : IPurgeEngine
         }
         diag.TotalMs = watch.ElapsedMilliseconds;
 
-        return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = diag.Version };
+        return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = diag.Version, SavedAs = savedAs };
 
         FilePurgeResult Skip(string key, string? detail = null) =>
             new() { Status = FileStatus.Skipped, ReasonKey = key, Detail = detail, Version = diag.Version };

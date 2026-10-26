@@ -11,6 +11,7 @@ public sealed class PurgeDiagnostics
 {
     public FilePurgeResult? Result { get; set; }
     public string? Version { get; set; }
+    public string? SavedAs { get; set; }
     public int Passes { get; set; }
     public int UnknownEntities { get; set; }
     public int UnsupportedNotices { get; set; }

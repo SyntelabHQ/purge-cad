@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Autodesk.AutoCAD.DatabaseServices;
 
@@ -11,7 +12,8 @@ namespace PurgeCad.AutoCad.Plugin
     ///    nothing, because removing one item frees others (nested blocks, the layers and styles they used);
     ///  - DGN line style data (ACAD_DGNLINESTYLECOMP) that no remaining linetype reaches; it keeps the DGN
     ///    linetypes imported from MicroStation alive, so PURGE alone never removes them;
-    ///  - layer filters, unused annotation scales, and (only when asked) zero-length lines and empty texts.
+    ///  - layer filters, unused annotation scales, and (only when asked) zero-length lines and empty texts;
+    ///  - (only when asked) xrefs, images and PDF / DWF / DGN underlays whose file no longer exists: detached.
     /// Xref-dependent items are never touched. Every step is guarded: a failing step is counted, the rest runs.
     /// </summary>
     sealed class Purger
@@ -24,7 +26,8 @@ namespace PurgeCad.AutoCad.Plugin
             DimensionStyles = "DimensionStyles", TableStyles = "TableStyles", MultileaderStyles = "MultileaderStyles",
             MultilineStyles = "MultilineStyles", Materials = "Materials", ViewStyles = "ViewStyles",
             RegisteredApps = "RegisteredApps", LayerFilters = "LayerFilters", Dgn = "DgnLinetypeComponents",
-            Scales = "AnnotationScales", ZeroLength = "ZeroLengthGeometry", EmptyTexts = "EmptyTexts";
+            Scales = "AnnotationScales", ZeroLength = "ZeroLengthGeometry", EmptyTexts = "EmptyTexts",
+            MissingRefs = "MissingReferences";
 
         /// <summary>Named-object dictionaries that hold purgeable styles, with the entries AutoCAD always keeps.</summary>
         /// (No value tuples: .NET Framework 4.6.2 does not have them.)
@@ -53,6 +56,12 @@ namespace PurgeCad.AutoCad.Plugin
 
         public void Run()
         {
+            // first: what a detached reference leaves (its layers, styles) is purged by the passes below
+            if (job.Has(MissingRefs))
+            {
+                Guard(DetachMissingXrefs);
+                Guard(RemoveMissingImagesAndUnderlays);
+            }
             if (job.Has(LayerFilters)) Guard(RemoveLayerFilters);
             if (job.Has(ZeroLength) || job.Has(EmptyTexts)) Guard(RemoveEmptyGeometry);
 
@@ -500,6 +509,136 @@ namespace PurgeCad.AutoCad.Plugin
                         if (Erase(tr, pair.Key)) report.Add(pair.Value);
                         else report.Errors++;
                     }
+                }
+                tr.Commit();
+            }
+        }
+        // ----------------------------------------------------------------- missing references
+
+        static readonly string[] UnderlayDictionaries = { "ACAD_PDFDEFINITIONS", "ACAD_DWFDEFINITIONS", "ACAD_DGNDEFINITIONS" };
+
+        /// <summary>
+        /// True when the referenced file exists: as written (absolute), next to the original drawing (relative path,
+        /// or just the file name, which AutoCAD also tries), or on AutoCAD's search paths. AutoCAD has a copy of the
+        /// drawing open in a work folder, so its own resolving cannot be trusted for relative paths.
+        /// </summary>
+        bool FileFound(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return true; // nothing to look for: never treated as missing
+            try
+            {
+                var candidates = new List<string>();
+                if (Path.IsPathRooted(path)) candidates.Add(path);
+                var folder = string.IsNullOrEmpty(job.SourcePath) ? null : Path.GetDirectoryName(job.SourcePath);
+                if (folder != null)
+                {
+                    if (!Path.IsPathRooted(path)) candidates.Add(Path.GetFullPath(Path.Combine(folder, path)));
+                    candidates.Add(Path.Combine(folder, Path.GetFileName(path)));
+                }
+                if (candidates.Any(File.Exists)) return true;
+            }
+            catch (ArgumentException) { }
+            catch (NotSupportedException) { }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { return true; } // cannot tell: keep it
+
+            if (string.IsNullOrEmpty(job.SourcePath))
+            {
+                // without the original's folder only AutoCAD's own search is left
+                try { return !string.IsNullOrEmpty(HostApplicationServices.Current.FindFile(path, db, FindFileHint.Default)); }
+                catch (System.Exception) { return false; }
+            }
+            return false;
+        }
+
+        /// <summary>Detaches xrefs whose file is gone (what XREF shows as "Not found").</summary>
+        void DetachMissingXrefs()
+        {
+            var missing = new List<KeyValuePair<ObjectId, string>>();
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                foreach (ObjectId id in (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead))
+                {
+                    if (id.IsErased) continue;
+                    var block = (BlockTableRecord)tr.GetObject(id, OpenMode.ForRead);
+                    if (!block.IsFromExternalReference || block.XrefStatus == XrefStatus.Resolved) continue;
+                    if (!FileFound(block.PathName)) missing.Add(new KeyValuePair<ObjectId, string>(id, block.Name + " (" + block.PathName + ")"));
+                }
+                tr.Commit();
+            }
+            foreach (var xref in missing)
+            {
+                try
+                {
+                    db.DetachXref(xref.Key);
+                    report.Add(MissingRefs);
+                    say("missing xref detached: " + xref.Value);
+                }
+                catch (System.Exception e)
+                {
+                    report.Errors++;
+                    if (report.Notes.Count < 20) report.Notes.Add("xref " + xref.Value + " not detached: " + e.Message);
+                }
+            }
+        }
+
+        /// <summary>Images and PDF / DWF / DGN underlays whose file is gone: their references and definitions are erased.</summary>
+        void RemoveMissingImagesAndUnderlays()
+        {
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var nod = (DBDictionary)tr.GetObject(db.NamedObjectsDictionaryId, OpenMode.ForRead);
+                // definition id → (dictionary, key)
+                var gone = new Dictionary<ObjectId, KeyValuePair<ObjectId, string>>();
+
+                foreach (var name in new[] { "ACAD_IMAGE_DICT" }.Concat(UnderlayDictionaries))
+                {
+                    if (!nod.Contains(name)) continue;
+                    var dictionary = tr.GetObject(nod.GetAt(name), OpenMode.ForRead) as DBDictionary;
+                    if (dictionary == null) continue;
+                    foreach (DBDictionaryEntry entry in dictionary)
+                    {
+                        var definition = tr.GetObject(entry.Value, OpenMode.ForRead);
+                        string file = null, active = null;
+                        var image = definition as RasterImageDef;
+                        if (image != null) { file = image.SourceFileName; active = image.ActiveFileName; }
+                        var underlay = definition as UnderlayDefinition;
+                        if (underlay != null) file = underlay.SourceFileName;
+                        if (file == null || FileFound(file) || (!string.IsNullOrEmpty(active) && active != file && FileFound(active))) continue;
+                        gone[entry.Value] = new KeyValuePair<ObjectId, string>(dictionary.ObjectId, entry.Key);
+                        say("missing file: " + file);
+                    }
+                }
+                if (gone.Count == 0) { tr.Commit(); return; }
+
+                // the references, in every layout and block of this drawing (not inside xrefs)
+                var imageClass = Autodesk.AutoCAD.Runtime.RXObject.GetClass(typeof(RasterImage));
+                var underlayClass = Autodesk.AutoCAD.Runtime.RXObject.GetClass(typeof(UnderlayReference));
+                foreach (ObjectId blockId in (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead))
+                {
+                    if (blockId.IsErased) continue;
+                    var block = (BlockTableRecord)tr.GetObject(blockId, OpenMode.ForRead);
+                    if (block.IsFromExternalReference || block.IsDependent) continue;
+                    foreach (ObjectId id in block)
+                    {
+                        if (id.IsErased) continue;
+                        var isImage = id.ObjectClass.IsDerivedFrom(imageClass);
+                        if (!isImage && !id.ObjectClass.IsDerivedFrom(underlayClass)) continue;
+                        var entity = tr.GetObject(id, OpenMode.ForRead);
+                        var definition = isImage ? ((RasterImage)entity).ImageDefId : ((UnderlayReference)entity).DefinitionId;
+                        if (!gone.ContainsKey(definition)) continue;
+                        entity.UpgradeOpen();
+                        entity.Erase();
+                    }
+                }
+
+                foreach (var pair in gone)
+                {
+                    var dictionary = (DBDictionary)tr.GetObject(pair.Value.Key, OpenMode.ForWrite);
+                    if (dictionary.Contains(pair.Value.Value)) dictionary.Remove(pair.Value.Value);
+                    var definition = tr.GetObject(pair.Key, OpenMode.ForWrite);
+                    if (!definition.IsErased) definition.Erase();
+                    report.Add(MissingRefs);
                 }
                 tr.Commit();
             }

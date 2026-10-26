@@ -36,7 +36,6 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
     /// <summary>Each accoreconsole takes memory and starts AutoCAD's core; 4 at most.</summary>
     public int MaxParallelism => 4;
 
-    public static string LogFolder => Path.Combine(Path.GetTempPath(), "PurgeCAD", "logs");
 
     public EngineAvailability CheckAvailability()
     {
@@ -58,6 +57,14 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
             return FilePurgeResult.Skip("engine.autocad.binaryDxf");
         if (version is not null && string.CompareOrdinal(version, AutoCadScript.NewestFormat(install.Release)) > 0)
             return new FilePurgeResult { Status = FileStatus.Skipped, ReasonKey = "skip.versionTooNew", Version = version };
+        // A version to save in that this AutoCAD does not have yet (2018 asked from AutoCAD 2013).
+        if (request.Options.SaveVersion is { } wanted && string.CompareOrdinal(wanted, AutoCadScript.NewestFormat(install.Release)) > 0)
+            return new FilePurgeResult { Status = FileStatus.Skipped, ReasonKey = "engine.autocad.saveVersionTooNew", Version = version };
+        // Convert tab, drawing already in that version: AutoCAD is not started at all
+        if (request.Options.NothingToDo(version))
+            return new FilePurgeResult { Status = FileStatus.NothingToPurge, Version = version };
+        var converts = request.Options.Converts(version);
+        var savedAs = converts ? request.Options.SaveVersion : null;
 
         var work = Path.Combine(Path.GetTempPath(), "PurgeCAD", "acad-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(work);
@@ -77,8 +84,8 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
             {
                 foreach (var stale in new[] { output, counts }) if (File.Exists(stale)) File.Delete(stale);
                 if (plugin is not null)
-                    await File.WriteAllTextAsync(job, AutoCadScript.BuildJob(request.Options, counts), new UTF8Encoding(false), cancellationToken);
-                var text = AutoCadScript.Build(request.Options, output, AutoCadScript.SaveFormat(version), dxf, major, counts, plugin);
+                    await File.WriteAllTextAsync(job, AutoCadScript.BuildJob(request.Options, counts, request.SourcePath), new UTF8Encoding(false), cancellationToken);
+                var text = AutoCadScript.Build(request.Options, output, AutoCadScript.SaveFormat(request.Options.TargetVersion(version), major), dxf, major, counts, plugin);
                 // Plain ANSI-safe text when the paths allow it (every AutoCAD reads that); UTF-8 with BOM only for
                 // paths with other characters, which AutoCAD 2021+ reads.
                 var ascii = text.All(c => c < 128);
@@ -114,6 +121,8 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
             }
             SaveLog(logFile, scriptText, run);
 
+            if (run.Outcome == RunOutcome.CannotOpen)
+                return FilePurgeResult.Fail("engine.autocad.fail.cannotOpen", Tail(run.Log, logFile));
             if (run.Outcome == RunOutcome.Stuck)
                 return FilePurgeResult.Fail("engine.autocad.fail.stuck", Tail(run.Log, logFile));
             if (!HasOutput(output) && AutoCadScript.IsLicensingFailure(run.Log))
@@ -124,14 +133,15 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
             if (!HasOutput(output))
                 return FilePurgeResult.Fail("engine.autocad.fail.noOutput", Tail(run.Log, logFile));
 
-            if (understood && removed.Values.Sum() == 0)
+            // converted to another version: written even when nothing was purged
+            if (understood && removed.Values.Sum() == 0 && !converts)
                 return new FilePurgeResult { Status = FileStatus.NothingToPurge, Version = version };
 
             if (request.DryRun)
-                return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = version };
+                return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = version, SavedAs = savedAs };
 
             File.Move(output, request.OutputPath, overwrite: true);
-            return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = version };
+            return new FilePurgeResult { Status = FileStatus.Purged, Removed = removed, Version = version, SavedAs = savedAs };
         }
         finally
         {
@@ -139,7 +149,7 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
         }
     }
 
-    enum RunOutcome { Exited, Stuck }
+    enum RunOutcome { Exited, Stuck, CannotOpen }
 
     readonly record struct ConsoleRun(RunOutcome Outcome, string Log, int? ExitCode);
 
@@ -215,6 +225,8 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
             var buffer = new MemoryStream();
             var lastActivity = Stopwatch.StartNew();
             var stuck = false;
+            var cannotOpen = false;
+            var openTail = "";
 
             // The log file is written while AutoCAD runs, so it can be read even when the console hangs.
             var live = OpenLiveLog(logFile, scriptText);
@@ -244,6 +256,15 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
                     stepsSeen += CountOf(window, "-PURGE") - CountOf(tail, "-PURGE")
                                  + CountOf(window, PluginPass) - CountOf(tail, PluginPass);
                     tail = window.Length > 16 ? window[^16..] : window;
+
+                    // AutoCAD could not open the drawing and went on with an empty one: stop it before it saves that.
+                    var openWindow = openTail + text;
+                    openTail = openWindow.Length > 64 ? openWindow[^64..] : openWindow;
+                    if (!cannotOpen && AutoCadScript.IsOpenFailure(openWindow))
+                    {
+                        cannotOpen = true;
+                        Kill();
+                    }
                     progress?.Report(Math.Min(0.97, (double)stepsSeen / steps));
 
                     if (live is null) continue;
@@ -281,16 +302,14 @@ public sealed class AutoCadEngine(Func<string?> manualConsolePath) : IPurgeEngin
             lock (buffer) bytes = buffer.ToArray();
             var log = AutoCadScript.DecodeLog(bytes);
             if (!string.IsNullOrWhiteSpace(stderr)) log += "\n[stderr]\n" + stderr;
-            return new ConsoleRun(stuck ? RunOutcome.Stuck : RunOutcome.Exited, log,
+            var outcome = cannotOpen || AutoCadScript.IsOpenFailure(log) ? RunOutcome.CannotOpen
+                : stuck ? RunOutcome.Stuck : RunOutcome.Exited;
+            return new ConsoleRun(outcome, log,
                 process.HasExited ? process.ExitCode : null);
         }
     }
 
-    static string LogPathFor(string source)
-    {
-        var name = string.Concat(Path.GetFileName(source).Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        return Path.Combine(LogFolder, name + ".log");
-    }
+    static string LogPathFor(string source) => EngineLogs.PathFor(source);
 
     static int CountOf(string text, string what)
     {
